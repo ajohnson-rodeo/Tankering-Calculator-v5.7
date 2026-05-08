@@ -107,7 +107,7 @@
     <section class="card">
       <div class="section-title"><span>Leg Inputs</span><button class="secondary" onclick="addLeg()">+ Add Leg</button></div>
       <div id="legs"></div>
-      <p class="note">Fuel cost next stop syncs into the following leg’s fuel cost this stop. Next-leg required flight fuel syncs from the following leg’s Fuel to Destination. Start fuel defaults to Fuel to Destination + 2,000 lb. Minimum Required Fuel defaults to Start Fuel. All fields remain editable.</p>
+      <p class="note">Fuel cost next stop syncs into the following leg’s fuel cost this stop. Next-leg required flight fuel and the following leg’s Fuel to Destination sync both directions. Start fuel defaults to Fuel to Destination + 2,000 lb. Minimum Required Fuel defaults to Start Fuel. Recommendations are hard-limited so ZFW + suggested landing fuel cannot exceed Max Landing Gross Weight. All fields remain editable.</p>
     </section>
 
     <section class="card">
@@ -251,6 +251,22 @@ function syncAdjacentLegFuel(changedId, source){
       prevNext.value = currentBurn.value;
     }
   }
+
+  if(source === "nextFlightFuel" && idx < ids.length - 1){
+    const next = ids[idx + 1];
+    const currentNextFlightFuel = document.getElementById("nextStart-" + changedId);
+    const nextBurn = document.getElementById("burn-" + next);
+    const nextStart = document.getElementById("start-" + next);
+    const nextMinReq = document.getElementById("minReq-" + next);
+
+    if(currentNextFlightFuel && nextBurn){
+      nextBurn.value = currentNextFlightFuel.value;
+
+      const burn = parseFloat(nextBurn.value) || 0;
+      if(nextStart) nextStart.value = Math.round(burn + 2000);
+      if(nextMinReq && nextStart) nextMinReq.value = nextStart.value;
+    }
+  }
 }
 
 function syncAllAdjacentLegFuel(){
@@ -308,7 +324,7 @@ function addLeg(values = {}){
     <h3><span>Leg ${legCount}</span><span id="legStatusPill-${legCount}" class="pill">Not calculated</span></h3>
     <div class="inputs">
       <label>Route / note
-        <input id="route-${legCount}" type="text" value="${values.route || ""}" placeholder="AAA-BBB" autocomplete="off">
+        <input id="route-${legCount}" type="text" value="${values.route || "KAAA - KBBB"}" placeholder="KAAA - KBBB" autocomplete="off">
       </label>
       <label>Fuel cost this stop, $/gal
         <input id="priceHere-${legCount}" type="number" value="${values.priceHere ?? 6.09}" step="0.01" inputmode="decimal">
@@ -385,7 +401,10 @@ function addLeg(values = {}){
 
   minReqInput.addEventListener("input", calculate);
 
-  nextStartInput.addEventListener("input", calculate);
+  nextStartInput.addEventListener("input", () => {
+    syncAdjacentLegFuel(id, "nextFlightFuel");
+    calculate();
+  });
 
   priceNextInput.addEventListener("input", () => {
     syncAdjacentLegFuelPrices(id, "priceNext");
@@ -458,15 +477,32 @@ function calcLeg(id){
   }
 
   const full = tankerPlan(maxTankerOut);
-  const noTanker = { startFuel: baselineStart + 200, landingFuel: Math.max(0, baselineStart + 200 - burn), tankerOut: 0, tankerIn: 0, carryBurn: 0, gross: 0, carryCost: 0, net: 0 };
 
-  const go = spread > 0 && full.net > 0 && maxTankerOut > 0;
+  // Hard landing-weight guard:
+  // Never recommend a start/arrival fuel that would make ZFW + landing fuel exceed max landing gross weight.
+  const noTankerStartLimitByLanding = Math.max(0, burn + maxLandingFuel);
+  const noTankerSuggestedStart = Math.min(baselineStart + 200, noTankerStartLimitByLanding, availableStart);
+  const noTankerSuggestedLanding = Math.max(0, noTankerSuggestedStart - burn);
+
+  const noTanker = {
+    startFuel: noTankerSuggestedStart,
+    landingFuel: noTankerSuggestedLanding,
+    tankerOut: 0,
+    tankerIn: 0,
+    carryBurn: 0,
+    gross: 0,
+    carryCost: 0,
+    net: 0
+  };
+
+  const go = spread > 0 && full.net > 0 && maxTankerOut > 0 && (zfw + full.landingFuel <= mlgw);
   const best = go ? full : noTanker;
 
   let reason = "No positive savings from carrying fuel above minimum required.";
-  if(maxTankerOut <= 0) reason = "No tanker fuel available above minimum required due to fuel/weight/landing constraints.";
+  if(zfw + full.landingFuel > mlgw) reason = "Tankering not recommended because planned landing weight would exceed max landing gross weight.";
+  else if(maxTankerOut <= 0) reason = "No tanker fuel available above minimum required due to fuel/weight/landing constraints.";
   else if(spread <= 0) reason = "Next fuel is not more expensive than current fuel.";
-  else if(go) reason = "Projected net savings are positive for fuel carried above minimum required.";
+  else if(go) reason = "Projected net savings are positive for fuel carried above minimum required and landing weight remains within limit.";
 
   const pill = document.getElementById("legStatusPill-" + id);
   if(pill){
@@ -481,7 +517,8 @@ function calcLeg(id){
       `Baseline arrival fuel ${lbs(baselineArrival)}`,
       `Max tanker above required ${lbs(maxTankerOut)}`,
       `Available start fuel ${lbs(availableStart)}`,
-      `Landing cap ${lbs(tankerInCap)}`
+      `Landing cap ${lbs(tankerInCap)}`,
+      `Suggested landing GW ${lbs(zfw + best.landingFuel)} / ${lbs(mlgw)}`
     ].join(" • ");
   }
 
@@ -695,9 +732,9 @@ function loadDemo(){
   document.getElementById("arrivalBuffer").value = 200;
   document.getElementById("carryPenaltyPctHr").value = 4.3;
 
-  addLeg({route:"KTEB-KRDU", ete:1.4, burn:3200, start:5200, minReq:5200, priceHere:5.65, priceNext:7.20, fees:300, minBuyGal:200, zfw:22400, mlgw:31800, mtogw:36100});
-  addLeg({route:"KRDU-KIAD", ete:0.7, burn:1800, start:3800, minReq:3800, priceHere:7.20, priceNext:6.95, fees:250, minBuyGal:150, zfw:22400, mlgw:31800, mtogw:36100});
-  addLeg({route:"KIAD-KGPI", ete:4.0, burn:7000, start:9000, minReq:9000, priceHere:6.95, priceNext:8.25, fees:0, minBuyGal:0, zfw:22400, mlgw:31800, mtogw:36100});
+  addLeg({route:"KAAA - KBBB", ete:1.4, burn:3200, start:5200, minReq:5200, priceHere:5.65, priceNext:7.20, fees:300, minBuyGal:200, zfw:22400, mlgw:31800, mtogw:36100});
+  addLeg({route:"KAAA - KBBB", ete:0.7, burn:1800, start:3800, minReq:3800, priceHere:7.20, priceNext:6.95, fees:250, minBuyGal:150, zfw:22400, mlgw:31800, mtogw:36100});
+  addLeg({route:"KAAA - KBBB", ete:4.0, burn:7000, start:9000, minReq:9000, priceHere:6.95, priceNext:8.25, fees:0, minBuyGal:0, zfw:22400, mlgw:31800, mtogw:36100});
 
   refreshActualLegSelect();
   syncActualValidatorFromSelectedLeg(true);
