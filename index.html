@@ -107,7 +107,7 @@
     <section class="card">
       <div class="section-title"><span>Leg Inputs</span><button class="secondary" onclick="addLeg()">+ Add Leg</button></div>
       <div id="legs"></div>
-      <p class="note">Fuel cost next stop syncs into the following leg’s fuel cost this stop. Start fuel defaults to Fuel to Destination + 2,000 lb. Minimum Required Fuel defaults to Start Fuel. All fields remain editable.</p>
+      <p class="note">Fuel cost next stop syncs into the following leg’s fuel cost this stop. Next-leg required flight fuel syncs from the following leg’s Fuel to Destination. Start fuel defaults to Fuel to Destination + 2,000 lb. Minimum Required Fuel defaults to Start Fuel. All fields remain editable.</p>
     </section>
 
     <section class="card">
@@ -242,31 +242,27 @@ function syncAdjacentLegFuel(changedId, source){
   const idx = ids.indexOf(changedId);
   if(idx === -1) return;
 
-  if(source === "start" && idx > 0){
+  if(source === "burn" && idx > 0){
     const prev = ids[idx - 1];
     const prevNext = document.getElementById("nextStart-" + prev);
-    const currentStart = document.getElementById("start-" + changedId);
-    if(prevNext && currentStart) prevNext.value = currentStart.value;
-  }
+    const currentBurn = document.getElementById("burn-" + changedId);
 
-  if(source === "nextStart" && idx < ids.length - 1){
-    const next = ids[idx + 1];
-    const nextStart = document.getElementById("start-" + next);
-    const currentNext = document.getElementById("nextStart-" + changedId);
-    if(nextStart && currentNext){
-      nextStart.value = currentNext.value;
-      const nextMin = document.getElementById("minReq-" + next);
-      if(nextMin) nextMin.value = currentNext.value;
+    if(prevNext && currentBurn){
+      prevNext.value = currentBurn.value;
     }
   }
 }
 
 function syncAllAdjacentLegFuel(){
   const ids = legIds();
+
   for(let i = 1; i < ids.length; i++){
     const prevNext = document.getElementById("nextStart-" + ids[i - 1]);
-    const thisStart = document.getElementById("start-" + ids[i]);
-    if(prevNext && thisStart && thisStart.value !== "") prevNext.value = thisStart.value;
+    const thisBurn = document.getElementById("burn-" + ids[i]);
+
+    if(prevNext && thisBurn && thisBurn.value !== ""){
+      prevNext.value = thisBurn.value;
+    }
   }
 }
 
@@ -341,7 +337,7 @@ function addLeg(values = {}){
       <label>Minimum required fuel, lb
         <input id="minReq-${legCount}" type="number" value="${minReqDefault}" step="1" inputmode="decimal">
       </label>
-      <label>Next-leg required start fuel, lb
+      <label>Next-leg required flight fuel, lb
         <input id="nextStart-${legCount}" type="number" value="${values.nextStart ?? startDefault}" step="1" inputmode="decimal">
       </label>
       <label>Zero fuel weight, lb
@@ -377,22 +373,19 @@ function addLeg(values = {}){
     const burn = parseFloat(burnInput.value) || 0;
     startInput.value = Math.round(burn + 2000);
     minReqInput.value = startInput.value;
-    syncAdjacentLegFuel(id, "start");
+    syncAdjacentLegFuel(id, "burn");
     calculate();
   });
 
   startInput.addEventListener("input", () => {
     minReqInput.value = startInput.value;
-    syncAdjacentLegFuel(id, "start");
+    syncAdjacentLegFuel(id, "burn");
     calculate();
   });
 
   minReqInput.addEventListener("input", calculate);
 
-  nextStartInput.addEventListener("input", () => {
-    syncAdjacentLegFuel(id, "nextStart");
-    calculate();
-  });
+  nextStartInput.addEventListener("input", calculate);
 
   priceNextInput.addEventListener("input", () => {
     syncAdjacentLegFuelPrices(id, "priceNext");
