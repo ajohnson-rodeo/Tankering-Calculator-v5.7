@@ -3,110 +3,71 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Tankering Calculator v5.7</title>
+  <title>Tankering Calculator v 5.7.a</title>
   <style>
     :root {
-      --bg: #07111f;
-      --card: #101827;
-      --card2: #0b1220;
-      --line: #2c3b52;
-      --text: #e8eef8;
-      --muted: #9fb0c7;
-      --accent: #38bdf8;
-      --good: #22c55e;
-      --warn: #f59e0b;
-      --bad: #ef4444;
-      --input: #172033;
+      --bg:#07111f; --card:#101827; --card2:#0b1220; --line:#2c3b52;
+      --text:#e8eef8; --muted:#9fb0c7; --accent:#38bdf8;
+      --good:#22c55e; --warn:#f59e0b; --bad:#ef4444; --input:#172033;
     }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at top, #12355c 0%, #07111f 45%, #020617 100%);
-      color: var(--text);
-    }
-    .wrap { max-width: 1180px; margin: 0 auto; padding: 18px; }
-    h1 { font-size: 1.55rem; margin: 0 0 4px; }
-    .subtitle { color: var(--muted); margin: 0 0 16px; line-height: 1.35; font-size: .92rem; }
-    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
-    .card {
-      grid-column: span 12;
-      background: rgba(16, 24, 39, 0.96);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 14px;
-      box-shadow: 0 16px 40px rgba(0,0,0,.25);
-    }
-    @media (min-width: 850px) {
-      .half { grid-column: span 6; }
-      .third { grid-column: span 4; }
-      .two-thirds { grid-column: span 8; }
-    }
-    .section-title {
-      display: flex; justify-content: space-between; align-items: center; gap: 8px;
-      font-weight: 850; margin-bottom: 11px;
-    }
-    .inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    @media (max-width: 680px) { .inputs { grid-template-columns: 1fr; } }
-    label { display: grid; gap: 5px; color: var(--muted); font-size: .82rem; }
-    input, select {
-      width: 100%; border: 1px solid var(--line); background: var(--input);
-      color: var(--text); border-radius: 12px; padding: 10px 11px; font-size: .98rem;
-    }
-    input[readonly] { opacity: .95; background: #111a2a; font-weight: 800; }
-    input:focus, select:focus { outline: none; border-color: var(--accent); }
-    button {
-      border: 0; border-radius: 12px; padding: 10px 13px; font-weight: 850;
-      background: var(--accent); color: #082f49; cursor: pointer;
-    }
-    button.secondary { background: #172033; color: var(--text); border: 1px solid var(--line); }
-    .row-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-    .kpi { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    @media (min-width: 760px) { .kpi { grid-template-columns: repeat(4, 1fr); } }
-    .box {
-      background: #050b16; border: 1px solid var(--line); border-radius: 15px; padding: 12px;
-    }
-    .box .label { color: var(--muted); font-size: .74rem; line-height: 1.2; min-height: 2em; }
-    .box .value { margin-top: 6px; font-size: 1.25rem; font-weight: 950; }
-    .plan-list { display: grid; gap: 4px; margin-top: 6px; font-size: 1rem; font-weight: 950; }
-    .plan-line { line-height: 1.15; }
-    .good { color: var(--good) !important; }
-    .warn { color: var(--warn) !important; }
-    .bad { color: var(--bad) !important; }
-    .muted { color: var(--muted); }
-    .recommendation {
-      background: #050b16; border: 1px solid var(--line); border-radius: 15px; padding: 13px; line-height: 1.36;
-    }
-    .leg { background: var(--card2); border: 1px solid var(--line); border-radius: 16px; padding: 12px; margin-bottom: 10px; }
-    .leg h3 { margin: 0 0 10px; font-size: 1rem; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
-    .pill { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; font-size: .74rem; color: var(--muted); white-space: nowrap; }
-    .pill.good { border-color: rgba(34,197,94,.4); background: rgba(34,197,94,.08); }
-    .pill.warn { border-color: rgba(245,158,11,.4); background: rgba(245,158,11,.08); }
-    .pill.bad { border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.08); }
-    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
-    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: right; vertical-align: top; }
-    th:first-child, td:first-child { text-align: left; }
-    th { background: #050b16; color: var(--muted); }
-    .note { color: var(--muted); line-height: 1.36; font-size: .81rem; }
-    details { background: #050b16; border: 1px solid var(--line); border-radius: 13px; padding: 10px 12px; }
-    summary { cursor: pointer; font-weight: 850; }
-    .mini { font-size: .75rem; color: var(--muted); margin-top: 4px; }
-    .footer { margin-top: 14px; color: var(--muted); font-size: .78rem; line-height: 1.35; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at top,#12355c 0%,#07111f 45%,#020617 100%);color:var(--text)}
+    .wrap{max-width:1180px;margin:0 auto;padding:18px}
+    h1{font-size:1.55rem;margin:0 0 4px}
+    .subtitle{color:var(--muted);margin:0 0 16px;line-height:1.35;font-size:.92rem}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+    .card{grid-column:span 12;background:rgba(16,24,39,.96);border:1px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 16px 40px rgba(0,0,0,.25)}
+    @media(min-width:850px){.half{grid-column:span 6}.third{grid-column:span 4}.two-thirds{grid-column:span 8}}
+    .section-title{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:850;margin-bottom:11px}
+    .inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    @media(max-width:680px){.inputs{grid-template-columns:1fr}}
+    label{display:grid;gap:5px;color:var(--muted);font-size:.82rem}
+    input,select{width:100%;border:1px solid var(--line);background:var(--input);color:var(--text);border-radius:12px;padding:10px 11px;font-size:.98rem}
+    input[readonly]{opacity:.95;background:#111a2a;font-weight:800}
+    input:focus,select:focus{outline:none;border-color:var(--accent)}
+    button{border:0;border-radius:12px;padding:10px 13px;font-weight:850;background:var(--accent);color:#082f49;cursor:pointer}
+    button.secondary{background:#172033;color:var(--text);border:1px solid var(--line)}
+    .row-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .kpi,.daily-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    @media(min-width:760px){.kpi,.daily-summary{grid-template-columns:repeat(4,1fr)}}
+    .box{background:#050b16;border:1px solid var(--line);border-radius:15px;padding:12px}
+    .box .label{color:var(--muted);font-size:.74rem;line-height:1.2;min-height:2em}
+    .box .value{margin-top:6px;font-size:1.25rem;font-weight:950}
+    .good{color:var(--good)!important}.warn{color:var(--warn)!important}.bad{color:var(--bad)!important}.muted{color:var(--muted)}
+    .recommendation{background:#050b16;border:1px solid var(--line);border-radius:15px;padding:13px;line-height:1.36}
+    .leg{background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px}
+    .leg h3{margin:0 0 10px;font-size:1rem;display:flex;justify-content:space-between;gap:8px;align-items:center}
+    .pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:3px 9px;font-size:.74rem;color:var(--muted);white-space:nowrap}
+    .pill.good{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.08);color:var(--good)}
+    .pill.warn{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.08);color:var(--warn)}
+    .pill.bad{border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.08);color:var(--bad)}
+    table{width:100%;border-collapse:collapse;font-size:.88rem}
+    th,td{padding:10px;border-bottom:1px solid var(--line);text-align:right;vertical-align:top}
+    th:first-child,td:first-child{text-align:left}
+    th{background:#050b16;color:var(--muted)}
+    .note{color:var(--muted);line-height:1.36;font-size:.81rem}
+    details{background:#050b16;border:1px solid var(--line);border-radius:13px;padding:10px 12px}
+    summary{cursor:pointer;font-weight:850}
+    .mini{font-size:.75rem;color:var(--muted);margin-top:4px}
+    .footer{margin-top:14px;color:var(--muted);font-size:.78rem;line-height:1.35}
+    .plan-list{display:grid;gap:4px;margin-top:6px;font-size:1rem;font-weight:950}
+    .plan-line{line-height:1.15}
+    select.good{border-color:rgba(34,197,94,.75);color:var(--good);font-weight:850}
+    select.bad{border-color:rgba(239,68,68,.75);color:var(--bad);font-weight:850}
+    .tooltip{position:relative;display:inline-block;cursor:pointer;margin-left:6px;color:#888}
+    .tooltiptext{visibility:hidden;width:230px;background-color:#222;color:#fff;text-align:left;border-radius:6px;padding:8px;position:absolute;z-index:10;bottom:125%;left:50%;margin-left:-115px;font-size:12px}
+    .tooltip:hover .tooltiptext{visibility:visible}
+    .daily-input{min-width:95px;padding:8px;font-size:.9rem}.daily-route{min-width:120px;text-align:left}
   </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Tankering Calculator v5.7</h1>
-  <p class="subtitle">
-    Find a way to YES. Don't leave money on the table.
-  </p>
+  <h1>Tankering Calculator v 5.7.a</h1>
+  <p class="subtitle">Find a way to YES. Don't leave money on the table.</p>
 
   <div class="grid">
     <section class="card two-thirds">
-      <div class="section-title">
-        <span>Aircraft / Global Assumptions</span>
-        <span class="pill">Planning aid only</span>
-      </div>
+      <div class="section-title"><span>Aircraft / Global Assumptions</span><span class="pill">Planning aid only</span></div>
       <div class="inputs">
         <label>Aircraft preset
           <select id="aircraft">
@@ -116,24 +77,22 @@
           </select>
         </label>
         <label>Fuel density, lb/gal
-          <input id="density" type="number" value="6.7" step="0.01" inputmode="decimal" pattern="[0-9]*">
+          <input id="density" type="number" value="6.7" step="0.01" inputmode="decimal">
         </label>
         <label>Maximum usable fuel, lb
-          <input id="maxFuel" type="number" value="13031" step="1" inputmode="decimal" pattern="[0-9]*">
+          <input id="maxFuel" type="number" value="13031" step="1" inputmode="decimal">
         </label>
         <label>Tanker landing fuel cap, % of max landing fuel
-          <input id="landingCapPct" type="number" value="90" step="1" inputmode="decimal" pattern="[0-9]*">
+          <input id="landingCapPct" type="number" value="90" step="1" inputmode="decimal">
         </label>
         <label>Arrival buffer above target/min fuel, lb
-          <input id="arrivalBuffer" type="number" value="200" step="1" inputmode="decimal" pattern="[0-9]*">
+          <input id="arrivalBuffer" type="number" value="200" step="1" inputmode="decimal">
         </label>
         <label>Default carry penalty, %/flight hour
-          <input id="carryPenaltyPctHr" type="number" value="4.3" step="0.1" inputmode="decimal" pattern="[0-9]*">
+          <input id="carryPenaltyPctHr" type="number" value="4.3" step="0.1" inputmode="decimal">
         </label>
       </div>
-      <p class="note" style="margin-top:10px;">
-        Carry burn is estimated as: tankered fuel out × carry penalty %/hr × ETE. This is editable because actual penalty should ideally come from aircraft performance data or your company’s original worksheet.
-      </p>
+      <p class="note" style="margin-top:10px;">Required fuel is treated as operational baseline fuel. Only fuel carried above Minimum Required Fuel is evaluated as economic tanker fuel.</p>
     </section>
 
     <section class="card third">
@@ -146,14 +105,9 @@
     </section>
 
     <section class="card">
-      <div class="section-title">
-        <span>Leg Inputs</span>
-        <button class="secondary" onclick="addLeg()">+ Add Leg</button>
-      </div>
+      <div class="section-title"><span>Leg Inputs</span><button class="secondary" onclick="addLeg()">+ Add Leg</button></div>
       <div id="legs"></div>
-      <p class="note">
-        The field “Applicable price difference” is read-only and automatically calculated as next-stop fuel price minus current-stop fuel price. The calculator always shows true economics: positive net savings recommends TANKER; zero or negative net savings recommends DO NOT TANKER. Minimum required fuel starts as Fuel to Destination + 2000 lb and refreshes when Fuel to Destination changes, but pilots can still manually edit it for diverts, weather, or other operational requirements.
-      </p>
+      <p class="note">Fuel cost next stop syncs into the following leg’s fuel cost this stop. Start fuel defaults to Fuel to Destination + 2,000 lb. Minimum Required Fuel defaults to Start Fuel. All fields remain editable.</p>
     </section>
 
     <section class="card">
@@ -172,15 +126,8 @@
         <table>
           <thead>
             <tr>
-              <th>Leg</th>
-              <th>Status</th>
-              <th>Fuel spread</th>
-              <th>Max landing / cap</th>
-              <th>Optimum out / in</th>
-              <th>Full out / in</th>
-              <th>Optimum net</th>
-              <th>Full net</th>
-              <th>Suggested FAL</th>
+              <th>Leg</th><th>Status</th><th>Fuel spread</th><th>Max landing / cap</th>
+              <th>Tanker above min out / in</th><th>Suggested start / arrival</th><th>Projected net</th><th>Carry cost</th><th>Baseline arrival</th>
             </tr>
           </thead>
           <tbody id="outputRows"></tbody>
@@ -191,35 +138,45 @@
     <section class="card half">
       <div class="section-title">Actual Savings Validator</div>
       <div class="inputs">
-        <label>Actual fuel out, lb (Block-Out fuel)
-          <input id="actualOut" type="number" value="7146" step="1" inputmode="decimal" pattern="[0-9]*">
+        <label>Validate leg
+          <select id="actualLegSelect"></select>
         </label>
-        <label>Actual fuel in, lb (Block-In fuel)
-          <input id="actualIn" type="number" value="5500" step="1" inputmode="decimal" pattern="[0-9]*">
+        <label>Selected leg status
+          <input id="actualLegStatus" type="text" value="—" readonly>
         </label>
-        <label>Non-tanker arrival fuel, lb (Foreflight: Landing Fuel)
-          <input id="actualNTArr" type="number" value="1300" step="1" inputmode="decimal" pattern="[0-9]*">
+        <label>Actual fuel out, lb
+          <input id="actualOut" type="number" value="7146" step="1" inputmode="decimal">
         </label>
-        <label>Non-tanker fuel used, lb (Foreflight: Flight Fuel) 
-          <input id="actualNTBurn" type="number" value="2507" step="1" inputmode="decimal" pattern="[0-9]*">
+        <label>Actual fuel in, lb
+          <input id="actualIn" type="number" value="5500" step="1" inputmode="decimal">
         </label>
-        <label>Actual tanker fuel used, lb
-          <input id="actualTankerBurn" type="number" readonly inputmode="decimal" pattern="[0-9]*">
+        <label>Non-tanker arrival fuel, lb
+          <input id="actualNTArr" type="number" value="2000" step="1" inputmode="decimal">
+        </label>
+        <label>Non-tanker fuel used, lb
+          <input id="actualNTBurn" type="number" value="1339" step="1" inputmode="decimal">
+        </label>
+        <label>Takeoff time, optional 24hr format
+          <input id="actualTakeoffTime" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="2315">
+        </label>
+        <label>Landing time, optional 24hr format
+          <input id="actualLandingTime" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="0045">
         </label>
         <label>Actual flight time, hours
-          <input id="actualETE" type="number" value="1.0" step="0.1" inputmode="decimal" pattern="[0-9]*">
+          <input id="actualETE" type="number" value="1.0" step="0.1" inputmode="decimal">
+        </label>
+        <label>Actual tanker fuel used, lb
+          <input id="actualTankerBurn" type="number" readonly>
         </label>
         <label>Actual carry penalty, %/flight hour
-          <input id="actualCarryPenaltyPctHr" type="number" value="0.0" step="0.1" readonly inputmode="decimal" pattern="[0-9]*">
+          <input id="actualCarryPenaltyPctHr" type="number" value="0.0" step="0.1" readonly>
         </label>
         <label>Applicable price difference, $/gal
-          <input id="actualDiff" type="number" value="0.00" step="0.01" readonly inputmode="decimal" pattern="[0-9]*">
+          <input id="actualDiff" type="number" value="0.00" step="0.01" readonly>
         </label>
       </div>
-      <div class="row-actions">
-        <button onclick="calculateActual()">Validate Actual</button>
-      </div>
-      <p class="note">Actual validator uses the first leg’s auto-calculated fuel spread. Non-tanker fuel used auto-fills from Leg 1 fuel to destination and updates when Leg 1 fuel to destination changes, but can still be manually edited afterward. Actual carry penalty is calculated from actual fuel out, actual fuel in, planned leg fuel, non-tanker arrival fuel, and actual flight time.</p>
+      <div class="row-actions"><button onclick="calculateActual()">Validate Actual</button></div>
+      <p class="note">Non-tanker fuel used auto-fills from the selected leg’s Fuel to Destination. Non-tanker arrival fuel defaults to 2,000 lb planned landing fuel, but can be manually changed for weather/diverts.</p>
     </section>
 
     <section class="card half">
@@ -227,26 +184,22 @@
       <div class="kpi">
         <div class="box"><div class="label">Actual tanker-in fuel</div><div id="actualTankered" class="value">—</div></div>
         <div class="box"><div class="label">Extra burn from tankering</div><div id="actualExtraBurn" class="value">—</div></div>
-        <div class="box"><div class="label">Gross tankering savings</div><div id="actualSavings" class="value">—</div></div>
-        <div class="box"><div class="label">Net actual savings</div><div id="actualNet" class="value">—</div></div>
+        <div class="box"><div class="label">Actual fuel burn rate</div><div id="actualPPH" class="value">—</div></div>
+        <div class="box"><div class="label">Gross savings <span class="tooltip">ⓘ<span class="tooltiptext">Gross Savings = fuel you avoided buying at the next stop. Does NOT include carry cost.</span></span></div><div id="actualSavings" class="value">—</div></div>
+        <div class="box"><div class="label">Net actual savings <span class="tooltip">ⓘ<span class="tooltiptext">Net Savings = Gross Savings − Carry Cost. This is the actual economic benefit.</span></span></div><div id="actualNet" class="value">—</div></div>
       </div>
     </section>
 
     <section class="card">
       <details>
-        <summary>What changed in this demo</summary>
+        <summary>Formula notes / assumptions</summary>
         <div class="note" style="margin-top:10px;">
-          <p><b>1. Auto fuel spread:</b> pilots enter “this stop” and “next stop” fuel prices; the calculator displays the difference automatically.</p>
-          <p><b>2. True economics:</b> the tool always shows negative economics instead of hiding them, so tankering is only recommended when projected net savings are positive.</p>
-          <p><b>3. Per-leg GO / NO-GO:</b> the tool recommends tankering whenever projected net savings are positive.</p>
-          <p><b>4. Landing cap and start fuel awareness:</b> the output shows the landing fuel cap and uses max usable fuel / performance start fuel limits.</p>
-          <p><b>5. Actual validator sync:</b> the actual savings checker pulls the first leg’s auto-calculated price spread.</p>
-          <p><b>6. Actual carry penalty:</b> calculated as ((Actual Out − Actual In) − Planned Leg Fuel) ÷ (Actual Out − (Planned Leg Fuel + Non-Tanker Arrival Fuel)) ÷ Actual Flight Time × 100.</p>
+          <p><b>v5.7.a logic:</b> Minimum Required Fuel is treated as required operational fuel. The tool only evaluates fuel carried above Minimum Required Fuel as economic tanker fuel.</p>
+          <p><b>Actual validator:</b> Actual carry penalty = ((Actual Out − Actual In) − Planned Leg Fuel) ÷ (Actual Out − (Planned Leg Fuel + Non-Tanker Arrival Fuel)) ÷ Actual Flight Time × 100.</p>
+          <p>This is a planning aid only. Verify W&B, landing weight, runway analysis, reserves, MEL/CDL, fuel release, and company SOPs.</p>
         </div>
       </details>
-      <div class="footer">
-        Numeric fields open the mobile number keypad on iPhone, iPad, and Android. This is not an FAA, dispatch, AFM, company-release, or performance-planning substitute. Always verify W&B, landing weight, runway analysis, reserves, MEL/CDL, fuel order requirements, and company SOPs.
-      </div>
+      <div class="footer">Not for operational release by itself.</div>
     </section>
   </div>
 </div>
@@ -260,251 +213,301 @@ const aircraftDefaults = {
 
 let legCount = 0;
 
-function n(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
-function money(x) { return (x < 0 ? "-$" : "$") + Math.abs(x).toLocaleString(undefined, {maximumFractionDigits:0}); }
-function money2(x) { return (x < 0 ? "-$" : "$") + Math.abs(x).toFixed(2); }
-function lbs(x) { return Math.round(x).toLocaleString() + " lb"; }
+function n(id){ return parseFloat(document.getElementById(id)?.value) || 0; }
+function money(x){ return (x < 0 ? "-$" : "$") + Math.abs(x).toLocaleString(undefined,{maximumFractionDigits:0}); }
+function money2(x){ return (x < 0 ? "-$" : "$") + Math.abs(x).toFixed(2); }
+function lbs(x){ return Math.round(x).toLocaleString() + " lb"; }
 
-document.querySelectorAll("#density,#maxFuel,#landingCapPct,#arrivalBuffer,#carryPenaltyPctHr")
-  .forEach(el => el.addEventListener("input", calculate));
-
+document.querySelectorAll("#density,#maxFuel,#landingCapPct,#arrivalBuffer,#carryPenaltyPctHr").forEach(el => el.addEventListener("input", calculate));
 document.getElementById("aircraft").addEventListener("change", () => {
   const ac = document.getElementById("aircraft").value;
   const d = aircraftDefaults[ac];
-  if (d) {
+  if(d){
     document.getElementById("maxFuel").value = d.maxFuel;
     document.getElementById("carryPenaltyPctHr").value = d.carryPenaltyPctHr;
   }
-  const actualNTBurnInput = document.getElementById("actualNTBurn");
-  if (actualNTBurnInput) actualNTBurnInput.dataset.manualOverride = "false";
-
   calculate();
 });
 
-function addLeg(values = {}) {
+function legIds(){
+  return Array.from(document.querySelectorAll(".leg")).map(el => parseInt(el.id.replace("leg-","")));
+}
+
+function rawSpread(id){
+  return n("priceNext-" + id) - n("priceHere-" + id);
+}
+
+function syncAdjacentLegFuel(changedId, source){
+  const ids = legIds();
+  const idx = ids.indexOf(changedId);
+  if(idx === -1) return;
+
+  if(source === "start" && idx > 0){
+    const prev = ids[idx - 1];
+    const prevNext = document.getElementById("nextStart-" + prev);
+    const currentStart = document.getElementById("start-" + changedId);
+    if(prevNext && currentStart) prevNext.value = currentStart.value;
+  }
+
+  if(source === "nextStart" && idx < ids.length - 1){
+    const next = ids[idx + 1];
+    const nextStart = document.getElementById("start-" + next);
+    const currentNext = document.getElementById("nextStart-" + changedId);
+    if(nextStart && currentNext){
+      nextStart.value = currentNext.value;
+      const nextMin = document.getElementById("minReq-" + next);
+      if(nextMin) nextMin.value = currentNext.value;
+    }
+  }
+}
+
+function syncAllAdjacentLegFuel(){
+  const ids = legIds();
+  for(let i = 1; i < ids.length; i++){
+    const prevNext = document.getElementById("nextStart-" + ids[i - 1]);
+    const thisStart = document.getElementById("start-" + ids[i]);
+    if(prevNext && thisStart && thisStart.value !== "") prevNext.value = thisStart.value;
+  }
+}
+
+function syncAdjacentLegFuelPrices(changedId, source){
+  const ids = legIds();
+  const idx = ids.indexOf(changedId);
+  if(idx === -1) return;
+
+  if(source === "priceNext" && idx < ids.length - 1){
+    const next = ids[idx + 1];
+    const currentNext = document.getElementById("priceNext-" + changedId);
+    const nextHere = document.getElementById("priceHere-" + next);
+    if(currentNext && nextHere) nextHere.value = currentNext.value;
+  }
+
+  if(source === "priceHere" && idx > 0){
+    const prev = ids[idx - 1];
+    const currentHere = document.getElementById("priceHere-" + changedId);
+    const prevNext = document.getElementById("priceNext-" + prev);
+    if(currentHere && prevNext) prevNext.value = currentHere.value;
+  }
+}
+
+function syncAllAdjacentLegFuelPrices(){
+  const ids = legIds();
+  for(let i = 1; i < ids.length; i++){
+    const prevNext = document.getElementById("priceNext-" + ids[i - 1]);
+    const thisHere = document.getElementById("priceHere-" + ids[i]);
+    if(prevNext && thisHere && prevNext.value !== "") thisHere.value = prevNext.value;
+  }
+}
+
+function addLeg(values = {}){
   legCount++;
+  const burnDefault = values.burn ?? 1339;
+  const startDefault = values.start ?? (burnDefault + 2000);
+  const minReqDefault = values.minReq ?? startDefault;
+
   const div = document.createElement("div");
   div.className = "leg";
   div.id = "leg-" + legCount;
   div.innerHTML = `
-    <h3>
-      <span>Leg ${legCount}</span>
-      <span id="legStatusPill-${legCount}" class="pill">Not calculated</span>
-    </h3>
+    <h3><span>Leg ${legCount}</span><span id="legStatusPill-${legCount}" class="pill">Not calculated</span></h3>
     <div class="inputs">
       <label>Route / note
         <input id="route-${legCount}" type="text" value="${values.route || ""}" placeholder="AAA-BBB" autocomplete="off">
       </label>
-      <label>ETE, hours
-        <input id="ete-${legCount}" type="number" value="${values.ete ?? 0.5}" step="0.1" inputmode="decimal" pattern="[0-9]*">
-      </label>
-
       <label>Fuel cost this stop, $/gal
-        <input id="priceHere-${legCount}" type="number" value="${values.priceHere ?? 6.09}" step="0.01" inputmode="decimal" pattern="[0-9]*">
+        <input id="priceHere-${legCount}" type="number" value="${values.priceHere ?? 6.09}" step="0.01" inputmode="decimal">
       </label>
       <label>Fuel cost next stop, $/gal
-        <input id="priceNext-${legCount}" type="number" value="${values.priceNext ?? 7.29}" step="0.01" inputmode="decimal" pattern="[0-9]*">
+        <input id="priceNext-${legCount}" type="number" value="${values.priceNext ?? 7.29}" step="0.01" inputmode="decimal">
       </label>
       <label>Applicable price difference, $/gal
-        <input id="diff-${legCount}" type="number" value="0.00" step="0.01" readonly inputmode="decimal" pattern="[0-9]*">
+        <input id="diff-${legCount}" type="number" value="0.00" step="0.01" readonly inputmode="decimal">
       </label>
       <label>Fees waived by min purchase, $
-        <input id="fees-${legCount}" type="number" value="${values.fees ?? 300}" step="1" inputmode="decimal" pattern="[0-9]*">
+        <input id="fees-${legCount}" type="number" value="${values.fees ?? 300}" step="1" inputmode="decimal">
       </label>
-
-      <label>Start fuel, non-tanker, lb
-        <input id="start-${legCount}" type="number" value="${values.start ?? 4146}" step="1" inputmode="decimal" pattern="[0-9]*">
+      <label>Min purchase to waive fees, gal
+        <input id="minBuyGal-${legCount}" type="number" value="${values.minBuyGal ?? 200}" step="1" inputmode="decimal">
+      </label>
+      <label>ETE, hours
+        <input id="ete-${legCount}" type="number" value="${values.ete ?? 0.5}" step="0.1" inputmode="decimal">
       </label>
       <label>Fuel to destination, non-tanker, lb
-        <input id="burn-${legCount}" type="number" value="${values.burn ?? 1339}" step="1" inputmode="decimal" pattern="[0-9]*">
+        <input id="burn-${legCount}" type="number" value="${burnDefault}" step="1" inputmode="decimal">
+      </label>
+      <label>Start fuel, non-tanker, lb
+        <input id="start-${legCount}" type="number" value="${startDefault}" step="1" inputmode="decimal">
       </label>
       <label>Minimum required fuel, lb
-        <input id="minReq-${legCount}" type="number" value="${values.minReq ?? ((values.burn ?? 1339) + 2000)}" step="1" inputmode="decimal" pattern="[0-9]*">
+        <input id="minReq-${legCount}" type="number" value="${minReqDefault}" step="1" inputmode="decimal">
       </label>
       <label>Next-leg required start fuel, lb
-        <input id="nextStart-${legCount}" type="number" value="${values.nextStart ?? 11951}" step="1" inputmode="decimal" pattern="[0-9]*">
-      </label>
-
-      <label>Min purchase to waive fees, gal
-        <input id="minBuyGal-${legCount}" type="number" value="${values.minBuyGal ?? 200}" step="1" inputmode="decimal" pattern="[0-9]*">
+        <input id="nextStart-${legCount}" type="number" value="${values.nextStart ?? startDefault}" step="1" inputmode="decimal">
       </label>
       <label>Zero fuel weight, lb
-        <input id="zfw-${legCount}" type="number" value="${values.zfw ?? 22322}" step="1" inputmode="decimal" pattern="[0-9]*">
+        <input id="zfw-${legCount}" type="number" value="${values.zfw ?? 22322}" step="1" inputmode="decimal">
       </label>
       <label>Max landing gross weight, lb
-        <input id="mlgw-${legCount}" type="number" value="${values.mlgw ?? 31800}" step="1" inputmode="decimal" pattern="[0-9]*">
+        <input id="mlgw-${legCount}" type="number" value="${values.mlgw ?? 31800}" step="1" inputmode="decimal">
       </label>
       <label>Max takeoff gross weight, lb
-        <input id="mtogw-${legCount}" type="number" value="${values.mtogw ?? 36100}" step="1" inputmode="decimal" pattern="[0-9]*">
+        <input id="mtogw-${legCount}" type="number" value="${values.mtogw ?? 36100}" step="1" inputmode="decimal">
       </label>
-
       <label>Override carry penalty, %/hr optional
-        <input id="penalty-${legCount}" type="number" value="${values.penalty ?? ""}" step="0.1" placeholder="uses default" inputmode="decimal" pattern="[0-9]*">
+        <input id="penalty-${legCount}" type="number" value="${values.penalty ?? ""}" step="0.1" placeholder="uses default" inputmode="decimal">
       </label>
       <label>Notes
         <input id="notes-${legCount}" type="text" value="${values.notes || ""}" placeholder="ramp limits, dispatch notes, etc." autocomplete="off">
       </label>
     </div>
     <div class="mini" id="constraint-${legCount}"></div>
-    <div class="row-actions">
-      <button class="secondary" onclick="removeLeg(${legCount})">Remove Leg</button>
-    </div>
+    <div class="row-actions"><button class="secondary" onclick="removeLeg(${legCount})">Remove Leg</button></div>
   `;
+
   document.getElementById("legs").appendChild(div);
+  const id = legCount;
+  const burnInput = document.getElementById("burn-" + id);
+  const startInput = document.getElementById("start-" + id);
+  const minReqInput = document.getElementById("minReq-" + id);
+  const nextStartInput = document.getElementById("nextStart-" + id);
+  const priceHereInput = document.getElementById("priceHere-" + id);
+  const priceNextInput = document.getElementById("priceNext-" + id);
 
-  const burnInput = document.getElementById(`burn-${legCount}`);
-  const minReqInput = document.getElementById(`minReq-${legCount}`);
-
-  // Minimum required fuel starts as Fuel to Destination + 2000 lb.
-  // The box stays editable for diverts, weather, or other operational needs.
-  // If Fuel to Destination is changed, Minimum Required Fuel refreshes to burn + 2000.
   burnInput.addEventListener("input", () => {
     const burn = parseFloat(burnInput.value) || 0;
-    minReqInput.value = Math.round(burn + 2000);
+    startInput.value = Math.round(burn + 2000);
+    minReqInput.value = startInput.value;
+    syncAdjacentLegFuel(id, "start");
+    calculate();
+  });
 
-    // If this is Leg 1, keep Actual Validator's Non-tanker fuel used matched to Fuel to destination.
-    if (legIds()[0] === legCount) {
-      syncActualNTBurnFromLeg1(true);
-    }
-
+  startInput.addEventListener("input", () => {
+    minReqInput.value = startInput.value;
+    syncAdjacentLegFuel(id, "start");
     calculate();
   });
 
   minReqInput.addEventListener("input", calculate);
 
+  nextStartInput.addEventListener("input", () => {
+    syncAdjacentLegFuel(id, "nextStart");
+    calculate();
+  });
+
+  priceNextInput.addEventListener("input", () => {
+    syncAdjacentLegFuelPrices(id, "priceNext");
+    calculate();
+  });
+
+  priceHereInput.addEventListener("input", () => {
+    syncAdjacentLegFuelPrices(id, "priceHere");
+    calculate();
+  });
+
   Array.from(div.querySelectorAll("input,select")).forEach(el => {
-    if (el !== burnInput && el !== minReqInput) {
+    if(![burnInput,startInput,minReqInput,nextStartInput,priceHereInput,priceNextInput].includes(el)){
       el.addEventListener("input", calculate);
     }
   });
 
+  syncAllAdjacentLegFuel();
+  syncAllAdjacentLegFuelPrices();
   calculate();
 }
 
-function removeLeg(id) {
+function removeLeg(id){
   const el = document.getElementById("leg-" + id);
-  if (el) el.remove();
+  if(el) el.remove();
   calculate();
 }
 
-function legIds() {
-  return Array.from(document.querySelectorAll(".leg")).map(el => parseInt(el.id.replace("leg-", "")));
-}
-
-function rawSpread(id) {
-  return n("priceNext-" + id) - n("priceHere-" + id);
-}
-
-function calcLeg(id) {
+function calcLeg(id){
   const density = n("density");
   const maxFuel = n("maxFuel");
   const capPct = n("landingCapPct") / 100;
-  const arrivalBuffer = n("arrivalBuffer");
   const defaultPenalty = n("carryPenaltyPctHr");
-  const penaltyOverride = parseFloat(document.getElementById("penalty-" + id).value);
-  const penaltyPctHr = isNaN(penaltyOverride) ? defaultPenalty : penaltyOverride;
+  const override = parseFloat(document.getElementById("penalty-" + id)?.value);
+  const penaltyPctHr = isNaN(override) ? defaultPenalty : override;
+
   const ete = n("ete-" + id);
   const burn = n("burn-" + id);
   const minReq = n("minReq-" + id);
   const mlgw = n("mlgw-" + id);
   const mtogw = n("mtogw-" + id);
   const zfw = n("zfw-" + id);
-  const nextStart = n("nextStart-" + id);
-  const minBuyGal = n("minBuyGal-" + id);
-  const fees = n("fees-" + id);
   const priceHere = n("priceHere-" + id);
-  const spreadRaw = rawSpread(id);
-  const spreadUsed = spreadRaw;
+  const spread = rawSpread(id);
 
   const diffField = document.getElementById("diff-" + id);
-  if (diffField) {
-    diffField.value = spreadRaw.toFixed(2);
-    diffField.className = spreadRaw > 0 ? "good" : (spreadRaw < 0 ? "bad" : "warn");
+  if(diffField){
+    diffField.value = spread.toFixed(2);
+    diffField.className = spread > 0 ? "good" : (spread < 0 ? "bad" : "warn");
   }
 
+  const baselineStart = Math.max(0, minReq);
+  const baselineArrival = Math.max(0, baselineStart - burn);
   const maxLandingFuel = Math.max(0, mlgw - zfw);
   const tankerInCap = Math.max(0, maxLandingFuel * capPct);
-  const maxPerfStartFuel = Math.max(0, mtogw - zfw);
-  const availableStartFuel = Math.max(0, Math.min(maxFuel, maxPerfStartFuel));
-  const minBuyLb = minBuyGal * density;
-  const landingFuelNonTanker = Math.max(0, minReq - burn);
+  const availableStart = Math.max(0, Math.min(maxFuel, mtogw - zfw));
+  const maxStartByLanding = Math.max(0, burn + tankerInCap);
+  const maxAllowableStart = Math.max(0, Math.min(availableStart, maxStartByLanding));
+  const maxTankerOut = Math.max(0, maxAllowableStart - baselineStart);
 
-  const optimumLandingFuel = Math.min(
-    tankerInCap,
-    Math.max(landingFuelNonTanker + arrivalBuffer, nextStart - minBuyLb + arrivalBuffer)
-  );
-  const fullLandingFuel = tankerInCap;
-
-  function plan(landingFuel, paysFees) {
-    const desiredStart = landingFuel + burn;
-    const startFuel = Math.min(availableStartFuel, Math.max(minReq, desiredStart));
-    const constrainedLandingFuel = Math.max(0, startFuel - burn);
-    const tankerOut = Math.max(0, startFuel - minReq);
+  function tankerPlan(tankerOut){
+    const startFuel = baselineStart + Math.max(0, tankerOut);
     const carryBurn = Math.max(0, tankerOut * (penaltyPctHr / 100) * ete);
-    const tankerIn = Math.max(0, Math.min(constrainedLandingFuel - landingFuelNonTanker, tankerOut - carryBurn, tankerInCap));
-    const grossSavings = (tankerIn / density) * spreadUsed;
-    const carryCost = (carryBurn / density) * priceHere;
-    const feeCost = paysFees ? fees : 0;
-    const net = grossSavings - carryCost - feeCost;
-    const startLimited = desiredStart > availableStartFuel;
-    return { landingFuel: constrainedLandingFuel, tankerOut, tankerIn, carryBurn, grossSavings, carryCost, feeCost, net, startFuel, startLimited };
+    const arrivalFuel = Math.max(0, startFuel - burn - carryBurn);
+    const tankerIn = Math.max(0, Math.min(arrivalFuel - baselineArrival, tankerOut - carryBurn, tankerInCap - baselineArrival));
+    const gross = density > 0 ? (tankerIn / density) * spread : 0;
+    const carryCost = density > 0 ? (carryBurn / density) * priceHere : 0;
+    const net = gross - carryCost;
+    return { startFuel, landingFuel: arrivalFuel, tankerOut, tankerIn, carryBurn, gross, carryCost, net };
   }
 
-  const optimum = plan(optimumLandingFuel, false);
-  const full = plan(fullLandingFuel, true);
-  const best = optimum.net >= full.net ? { name: "OPTIMUM", ...optimum } : { name: "FULL", ...full };
+  const full = tankerPlan(maxTankerOut);
+  const noTanker = { startFuel: baselineStart + 200, landingFuel: Math.max(0, baselineStart + 200 - burn), tankerOut: 0, tankerIn: 0, carryBurn: 0, gross: 0, carryCost: 0, net: 0 };
 
-  let status = "NO-GO";
-  let statusClass = "bad";
-  let reason = "Tankering is not economically favorable.";
-  if (spreadRaw < 0) {
-    status = "NO-GO";
-    statusClass = "bad";
-    reason = "Next fuel is cheaper than current fuel.";
-  } else if (best.net > 0) {
-    status = "GO";
-    statusClass = "good";
-    reason = "Projected net savings are positive.";
+  const go = spread > 0 && full.net > 0 && maxTankerOut > 0;
+  const best = go ? full : noTanker;
+
+  let reason = "No positive savings from carrying fuel above minimum required.";
+  if(maxTankerOut <= 0) reason = "No tanker fuel available above minimum required due to fuel/weight/landing constraints.";
+  else if(spread <= 0) reason = "Next fuel is not more expensive than current fuel.";
+  else if(go) reason = "Projected net savings are positive for fuel carried above minimum required.";
+
+  const pill = document.getElementById("legStatusPill-" + id);
+  if(pill){
+    pill.textContent = go ? "GO" : "NO-GO";
+    pill.className = "pill " + (go ? "good" : "bad");
   }
 
-  if (document.getElementById("legStatusPill-" + id)) {
-    const pill = document.getElementById("legStatusPill-" + id);
-    pill.textContent = status;
-    pill.className = "pill " + statusClass;
-  }
-  if (document.getElementById("constraint-" + id)) {
-    let notes = [
-      `Max landing fuel ${lbs(maxLandingFuel)}`,
-      `Cap ${lbs(tankerInCap)}`,
-      `Available start fuel ${lbs(availableStartFuel)}`
-    ];
-    if (optimum.startLimited || full.startLimited) notes.push("Start fuel limited by max fuel or performance limit");
-    document.getElementById("constraint-" + id).textContent = notes.join(" • ");
+  const constraint = document.getElementById("constraint-" + id);
+  if(constraint){
+    constraint.textContent = [
+      `Baseline required start fuel ${lbs(baselineStart)}`,
+      `Baseline arrival fuel ${lbs(baselineArrival)}`,
+      `Max tanker above required ${lbs(maxTankerOut)}`,
+      `Available start fuel ${lbs(availableStart)}`,
+      `Landing cap ${lbs(tankerInCap)}`
+    ].join(" • ");
   }
 
-  return {
-    id, route: document.getElementById("route-" + id).value || "Leg " + id,
-    maxLandingFuel, tankerInCap, maxPerfStartFuel, availableStartFuel,
-    spreadRaw, spreadUsed, optimum, full, best, status, statusClass, reason
-  };
+  return { id, route: document.getElementById("route-" + id)?.value || "Leg " + id, status: go ? "GO" : "NO-GO", statusClass: go ? "good" : "bad", reason, spreadRaw: spread, maxLandingFuel, tankerInCap, baselineArrivalFuel: baselineArrival, maxTankerOut, best };
 }
 
-function calculate() {
+function calculate(){
   const ids = legIds();
   const results = ids.map(calcLeg);
   const tbody = document.getElementById("outputRows");
   tbody.innerHTML = "";
 
-  let totalBest = 0, totalTankerIn = 0, totalCarry = 0;
-  let goCount = 0, marginalCount = 0, noGoCount = 0;
+  let totalNet = 0, totalTankerIn = 0, totalCarry = 0, goCount = 0;
 
-  results.forEach(r => {
-    totalBest += r.best.net;
+  results.forEach((r, idx) => {
+    totalNet += r.best.net;
     totalTankerIn += r.best.tankerIn;
     totalCarry += r.best.carryCost;
-    if (r.status === "GO") goCount++;
-    if (r.status === "MARGINAL") marginalCount++;
-    if (r.status === "NO-GO") noGoCount++;
+    if(r.status === "GO") goCount++;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -512,138 +515,184 @@ function calculate() {
       <td><span class="pill ${r.statusClass}">${r.status}</span></td>
       <td class="${r.spreadRaw > 0 ? "good" : (r.spreadRaw < 0 ? "bad" : "warn")}">${money2(r.spreadRaw)}</td>
       <td>${lbs(r.maxLandingFuel)} / ${lbs(r.tankerInCap)}</td>
-      <td>${lbs(r.optimum.tankerOut)} / ${lbs(r.optimum.tankerIn)}</td>
-      <td>${lbs(r.full.tankerOut)} / ${lbs(r.full.tankerIn)}</td>
-      <td class="${r.optimum.net >= 0 ? "good" : "bad"}">${money(r.optimum.net)}</td>
-      <td class="${r.full.net >= 0 ? "good" : "bad"}">${money(r.full.net)}</td>
-      <td>${lbs(r.best.landingFuel)}</td>
-    `;
+      <td>${lbs(r.best.tankerOut)} / ${lbs(r.best.tankerIn)}</td>
+      <td>${lbs(r.best.startFuel)} / ${lbs(r.best.landingFuel)}</td>
+      <td class="${r.best.net >= 0 ? "good" : "bad"}">${money(r.best.net)}</td>
+      <td>${money(r.best.carryCost)}</td>
+      <td>${lbs(r.baselineArrivalFuel)}</td>`;
     tbody.appendChild(tr);
   });
 
-  const recommendation = document.getElementById("recommendation");
-  if (!results.length) {
-    recommendation.innerHTML = "Add at least one leg.";
-    return;
-  }
-
-  document.getElementById("bestSavings").textContent = money(totalBest);
-  document.getElementById("bestSavings").className = "value " + (totalBest > 0 ? "good" : "bad");
-  const planBox = document.getElementById("bestOption");
-  planBox.className = "value plan-list";
-  planBox.innerHTML = results.map((r, index) => {
-    const cls = r.status === "GO" ? "good" : "bad";
-    const action = r.status === "GO" ? "TANKER" : "DO NOT TANKER";
-    return `<div class="plan-line ${cls}">LEG ${index + 1}: ${action}</div>`;
-  }).join("");
+  document.getElementById("bestSavings").textContent = money(totalNet);
+  document.getElementById("bestSavings").className = "value " + (totalNet > 0 ? "good" : "bad");
   document.getElementById("bestTankerIn").textContent = lbs(totalTankerIn);
   document.getElementById("bestCarryCost").textContent = money(totalCarry);
 
-  if (goCount > 0 && totalBest > 0) {
-    recommendation.innerHTML = `<b class="good">Tankering appears favorable on ${goCount} leg(s).</b><br>
-      Estimated trip net: <b>${money(totalBest)}</b>. Verify landing weight, release fuel, runway data, and company SOPs.`;
+  const planBox = document.getElementById("bestOption");
+  planBox.className = "value plan-list";
+  planBox.innerHTML = results.map((r, idx) => {
+    const cls = r.status === "GO" ? "good" : "bad";
+    const action = r.status === "GO" ? "TANKER" : "DO NOT TANKER";
+    return `<div class="plan-line ${cls}">LEG ${idx + 1}: ${action}</div>`;
+  }).join("");
+
+  const rec = document.getElementById("recommendation");
+  if(goCount > 0 && totalNet > 0){
+    rec.innerHTML = `<b class="good">Tankering appears favorable on ${goCount} leg(s).</b><br>Estimated trip net: <b>${money(totalNet)}</b>. Verify landing weight, release fuel, runway data, and SOPs.`;
   } else {
-    recommendation.innerHTML = `<b class="bad">Do not tanker based on current economics.</b><br>
-      No leg has positive projected net savings, or the fuel spread is negative.`;
+    rec.innerHTML = `<b class="bad">Do not tanker based on current economics.</b><br>No leg has positive projected net savings, or constraints prevent it.`;
+  }
+
+  refreshActualLegSelect();
+  syncActualValidatorFromSelectedLeg(false);
+  calculateActual(false);
+}
+
+function getSelectedActualLegId(){
+  const ids = legIds();
+  const select = document.getElementById("actualLegSelect");
+  if(!ids.length) return null;
+  const selected = select ? parseInt(select.value) : NaN;
+  return (!isNaN(selected) && ids.includes(selected)) ? selected : ids[0];
+}
+
+function refreshActualLegSelect(){
+  const select = document.getElementById("actualLegSelect");
+  if(!select) return;
+  const ids = legIds();
+  const old = select.value;
+  select.innerHTML = "";
+  ids.forEach((id, idx) => {
+    const r = calcLeg(id);
+    const opt = document.createElement("option");
+    opt.value = String(id);
+    opt.textContent = `LEG ${idx + 1}: ${r.route} — ${r.status === "GO" ? "TANKER" : "NO-GO"}`;
+    select.appendChild(opt);
+  });
+  if(ids.map(String).includes(old)) select.value = old;
+  else if(ids.length) select.value = String(ids[0]);
+  updateActualLegStatus();
+}
+
+function updateActualLegStatus(){
+  const statusInput = document.getElementById("actualLegStatus");
+  const select = document.getElementById("actualLegSelect");
+  const id = getSelectedActualLegId();
+  if(!id || !statusInput || !select) return;
+  const r = calcLeg(id);
+  const idx = legIds().indexOf(id) + 1;
+  statusInput.value = `LEG ${idx}: ${r.status === "GO" ? "TANKER" : "DO NOT TANKER"}`;
+  statusInput.className = r.status === "GO" ? "good" : "bad";
+  select.className = r.status === "GO" ? "good" : "bad";
+}
+
+function syncActualDiff(){
+  const id = getSelectedActualLegId();
+  const diff = id ? rawSpread(id) : 0;
+  const field = document.getElementById("actualDiff");
+  if(field){
+    field.value = diff.toFixed(2);
+    field.className = diff > 0 ? "good" : (diff < 0 ? "bad" : "warn");
+  }
+}
+
+function syncActualValidatorFromSelectedLeg(force = false){
+  const id = getSelectedActualLegId();
+  if(!id) return;
+  const burn = n("burn-" + id);
+  const ete = n("ete-" + id);
+
+  const ntBurn = document.getElementById("actualNTBurn");
+  const ntArr = document.getElementById("actualNTArr");
+  const eteEl = document.getElementById("actualETE");
+
+  if(ntBurn && (force || ntBurn.dataset.manualOverride !== "true")){
+    ntBurn.value = Math.round(burn);
+    ntBurn.dataset.manualOverride = "false";
+  }
+  if(ntArr && (force || ntArr.dataset.manualOverride !== "true")){
+    ntArr.value = 2000;
+    ntArr.dataset.manualOverride = "false";
+  }
+  if(eteEl && (force || eteEl.dataset.manualOverride !== "true")){
+    eteEl.value = ete ? ete.toFixed(1) : "";
+    eteEl.dataset.manualOverride = "false";
   }
 
   syncActualDiff();
-  syncActualNTBurnFromLeg1();
-  calculateActual();
+  updateActualLegStatus();
 }
 
-function syncActualDiff() {
-  const ids = legIds();
-  const diff = ids.length ? rawSpread(ids[0]) : 0;
-  const field = document.getElementById("actualDiff");
-  field.value = diff.toFixed(2);
-  field.className = diff > 0 ? "good" : (diff < 0 ? "bad" : "warn");
+function normalizeHHMM(value){
+  const digits = String(value || "").replace(/\D/g, "").slice(0,4);
+  if(!digits) return "";
+  return digits.padStart(4,"0");
+}
+function hhmmToMinutes(value){
+  const hhmm = normalizeHHMM(value);
+  if(hhmm.length !== 4) return null;
+  const hh = parseInt(hhmm.slice(0,2),10);
+  const mm = parseInt(hhmm.slice(2,4),10);
+  if(Number.isNaN(hh) || Number.isNaN(mm) || hh > 23 || mm > 59) return null;
+  return hh * 60 + mm;
+}
+function sanitizeHHMMInput(el){
+  if(el) el.value = String(el.value || "").replace(/\D/g, "").slice(0,4);
+}
+function calculateActualTimeFromTakeoffLanding(){
+  const takeoffEl = document.getElementById("actualTakeoffTime");
+  const landingEl = document.getElementById("actualLandingTime");
+  const eteEl = document.getElementById("actualETE");
+  if(!takeoffEl || !landingEl || !eteEl) return;
+  sanitizeHHMMInput(takeoffEl);
+  sanitizeHHMMInput(landingEl);
+  const takeoff = hhmmToMinutes(takeoffEl.value);
+  const landing = hhmmToMinutes(landingEl.value);
+  if(takeoff === null || landing === null) return;
+  if(normalizeHHMM(takeoffEl.value).length !== 4 || normalizeHHMM(landingEl.value).length !== 4) return;
+  let delta = landing - takeoff;
+  if(delta < 0) delta += 24 * 60;
+  eteEl.value = (delta / 60).toFixed(1);
+  eteEl.dataset.manualOverride = "false";
 }
 
-function syncActualNTBurnFromLeg1(force = false) {
-  const ids = legIds();
-  if (!ids.length) return;
-
-  const firstId = ids[0];
-  const burn = n("burn-" + firstId);
-  const actualNTBurnInput = document.getElementById("actualNTBurn");
-
-  // Auto-fill from Leg 1. If force=true, update even if the pilot previously edited it.
-  if (actualNTBurnInput && (force || actualNTBurnInput.dataset.manualOverride !== "true")) {
-    actualNTBurnInput.value = Math.round(burn);
-    actualNTBurnInput.dataset.manualOverride = "false";
-  }
-}
-
-function calculateActual() {
+function calculateActual(tryTime = true){
+  if(tryTime) calculateActualTimeFromTakeoffLanding();
   const density = n("density");
-  const ids = legIds();
-  const firstId = ids.length ? ids[0] : null;
-  const priceHere = firstId ? n("priceHere-" + firstId) : 0;
+  const selectedId = getSelectedActualLegId();
+  const priceHere = selectedId ? n("priceHere-" + selectedId) : 0;
   const diff = n("actualDiff");
-
-  // Actual flight time should be used for post-flight validation.
-  // If left blank or zero, the calculator falls back to the first leg's planned ETE.
-  const actualETE = n("actualETE");
-  const plannedETE = firstId ? n("ete-" + firstId) : 0;
-  const ete = actualETE > 0 ? actualETE : plannedETE;
+  const ete = n("actualETE");
 
   const actualOut = n("actualOut");
   const actualIn = n("actualIn");
   const ntArr = n("actualNTArr");
-
-  // Planned/non-tanker leg fuel. This auto-fills from Leg 1 Fuel to Destination,
-  // but remains editable in the Actual Savings Validator.
   const plannedLegFuel = n("actualNTBurn");
 
-  // Actual tanker fuel used = actual fuel out - actual fuel in.
   const actualBurn = Math.max(0, actualOut - actualIn);
   document.getElementById("actualTankerBurn").value = Math.round(actualBurn);
 
-  // Extra burn caused by tankering = actual burn - planned non-tanker burn.
   const extraBurn = Math.max(0, actualBurn - plannedLegFuel);
-
-  // Normal non-tanker start fuel = planned leg fuel + planned/non-tanker arrival fuel.
-  const normalNonTankerStartFuel = plannedLegFuel + ntArr;
-
-  // Estimated fuel carried above the normal non-tanker plan.
-  const actualTankeredOut = Math.max(0, actualOut - normalNonTankerStartFuel);
-
-  // Fuel carried into the next stop above the non-tanker arrival baseline.
   const tankeredIn = Math.max(0, actualIn - ntArr);
+  const normalStart = plannedLegFuel + ntArr;
+  const tankeredOut = Math.max(0, actualOut - normalStart);
+  const carryPenalty = (tankeredOut > 0 && ete > 0) ? (extraBurn / tankeredOut / ete) * 100 : 0;
+  document.getElementById("actualCarryPenaltyPctHr").value = carryPenalty.toFixed(1);
 
-  // Actual carry penalty %/flight hour:
-  // ((actual fuel out - actual fuel in) - planned leg fuel)
-  // ÷ (actual fuel out - (planned leg fuel + non-tanker arrival fuel))
-  // ÷ actual flight time × 100
-  const actualCarryPenaltyPctHr = (actualTankeredOut > 0 && ete > 0)
-    ? (extraBurn / actualTankeredOut / ete) * 100
-    : 0;
-
-  document.getElementById("actualCarryPenaltyPctHr").value = actualCarryPenaltyPctHr.toFixed(1);
-
-  const savings = density > 0 ? (tankeredIn / density) * diff : 0;
+  const grossSavings = density > 0 ? (tankeredIn / density) * diff : 0;
   const carryCost = density > 0 ? (extraBurn / density) * priceHere : 0;
-  const net = savings - carryCost;
+  const net = grossSavings - carryCost;
 
   document.getElementById("actualTankered").textContent = lbs(tankeredIn);
   document.getElementById("actualExtraBurn").textContent = lbs(extraBurn);
-  document.getElementById("actualSavings").textContent = money(savings);
-  document.getElementById("actualSavings").className = "value " + (savings >= 0 ? "good" : "bad");
+  document.getElementById("actualPPH").textContent = ete > 0 ? Math.round(actualBurn / ete).toLocaleString() + " lb/hr" : "—";
+  document.getElementById("actualSavings").textContent = money(grossSavings);
+  document.getElementById("actualSavings").className = "value " + (grossSavings >= 0 ? "good" : "bad");
   document.getElementById("actualNet").textContent = money(net);
   document.getElementById("actualNet").className = "value " + (net >= 0 ? "good" : "bad");
 }
 
-["actualOut","actualIn","actualNTArr","actualETE"].forEach(id => {
-  document.getElementById(id).addEventListener("input", calculateActual);
-});
-
-document.getElementById("actualNTBurn").addEventListener("input", () => {
-  document.getElementById("actualNTBurn").dataset.manualOverride = "true";
-  calculateActual();
-});
-
-function loadDemo() {
+function loadDemo(){
   document.getElementById("legs").innerHTML = "";
   legCount = 0;
   document.getElementById("aircraft").value = "CE-750";
@@ -653,42 +702,47 @@ function loadDemo() {
   document.getElementById("arrivalBuffer").value = 200;
   document.getElementById("carryPenaltyPctHr").value = 4.3;
 
-  addLeg({
-    route: "Pickup leg: KAAA-KBBB",
-    ete: 0.5,
-    start: 4146,
-    burn: 1339,
-    minReq: 3339,
-    nextStart: 11951,
-    minBuyGal: 200,
-    fees: 300,
-    priceHere: 6.09,
-    priceNext: 7.29,
-    zfw: 22322,
-    mlgw: 31800,
-    mtogw: 36100,
-    notes: "Demo positive spread"
-  });
+  addLeg({route:"KTEB-KRDU", ete:1.4, burn:3200, start:5200, minReq:5200, priceHere:5.65, priceNext:7.20, fees:300, minBuyGal:200, zfw:22400, mlgw:31800, mtogw:36100});
+  addLeg({route:"KRDU-KIAD", ete:0.7, burn:1800, start:3800, minReq:3800, priceHere:7.20, priceNext:6.95, fees:250, minBuyGal:150, zfw:22400, mlgw:31800, mtogw:36100});
+  addLeg({route:"KIAD-KGPI", ete:4.0, burn:7000, start:9000, minReq:9000, priceHere:6.95, priceNext:8.25, fees:0, minBuyGal:0, zfw:22400, mlgw:31800, mtogw:36100});
 
-  addLeg({
-    route: "Short reposition: KBBB-KCCC",
-    ete: 0.4,
-    start: 5000,
-    burn: 1100,
-    minReq: 3100,
-    nextStart: 6500,
-    minBuyGal: 150,
-    fees: 250,
-    priceHere: 7.29,
-    priceNext: 6.85,
-    zfw: 22400,
-    mlgw: 31800,
-    mtogw: 36100,
-    notes: "Demo negative spread"
-  });
-
-  calculate();
+  refreshActualLegSelect();
+  syncActualValidatorFromSelectedLeg(true);
+  calculateActual(false);
 }
+
+document.getElementById("actualLegSelect").addEventListener("change", () => {
+  ["actualNTBurn","actualNTArr","actualETE"].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.dataset.manualOverride = "false";
+  });
+  syncActualValidatorFromSelectedLeg(true);
+  calculateActual(false);
+});
+["actualOut","actualIn"].forEach(id => document.getElementById(id).addEventListener("input", () => calculateActual()));
+["actualNTBurn","actualNTArr","actualETE"].forEach(id => {
+  document.getElementById(id).addEventListener("input", () => {
+    document.getElementById(id).dataset.manualOverride = "true";
+    calculateActual(false);
+  });
+});
+["actualTakeoffTime","actualLandingTime"].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener("input", () => {
+    sanitizeHHMMInput(el);
+    calculateActualTimeFromTakeoffLanding();
+    calculateActual(false);
+  });
+});
+
+document.querySelectorAll(".tooltip").forEach(el => {
+  el.addEventListener("click", function(){
+    const tip = this.querySelector(".tooltiptext");
+    const visible = tip.style.visibility === "visible";
+    document.querySelectorAll(".tooltiptext").forEach(t => t.style.visibility = "hidden");
+    tip.style.visibility = visible ? "hidden" : "visible";
+  });
+});
 
 loadDemo();
 </script>
