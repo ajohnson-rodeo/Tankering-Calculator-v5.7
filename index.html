@@ -59,21 +59,34 @@
     .tooltip:hover .tooltiptext{visibility:visible}
     .daily-input{min-width:95px;padding:8px;font-size:.9rem}.daily-route{min-width:120px;text-align:left}
   
+    
     @media print {
-      @page { margin: 0.45in; }
-      body { background: #fff !important; color: #000 !important; }
-      body * { visibility: hidden !important; }
-      #printReport, #printReport * { visibility: visible !important; }
-      #printReport {
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100% !important;
-        display: block !important;
+      @page { margin: 0.45in; size: auto; }
+
+      html, body {
         background: #fff !important;
         color: #000 !important;
+        margin: 0 !important;
         padding: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
       }
+
+      .wrap {
+        display: none !important;
+      }
+
+      #printReport {
+        display: block !important;
+        position: static !important;
+        width: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+        color: #000 !important;
+      }
+
       #printReport .card,
       #printReport .box,
       #printReport .recommendation {
@@ -81,13 +94,39 @@
         color: #000 !important;
         border: 1px solid #999 !important;
         box-shadow: none !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
       }
-      #printReport table { color: #000 !important; font-size: 10px !important; }
-      #printReport th { background: #eee !important; color: #000 !important; }
-      #printReport td, #printReport th {
+
+      #printReport .card {
+        margin: 0 0 10px 0 !important;
+        padding: 10px !important;
+      }
+
+      #printReport table {
+        color: #000 !important;
+        font-size: 10px !important;
+        width: 100% !important;
+        border-collapse: collapse !important;
+        page-break-inside: auto;
+      }
+
+      #printReport th {
+        background: #eee !important;
+        color: #000 !important;
+      }
+
+      #printReport td,
+      #printReport th {
         border-bottom: 1px solid #aaa !important;
-        padding: 6px !important;
+        padding: 5px !important;
       }
+
+      #printReport tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
       #printReport .good,
       #printReport .bad,
       #printReport .warn,
@@ -96,12 +135,16 @@
       #printReport .mini {
         color: #000 !important;
       }
+
       #printReport .pill {
         color: #000 !important;
         border: 1px solid #333 !important;
         background: #fff !important;
       }
-      .no-print { display: none !important; }
+
+      .no-print {
+        display: none !important;
+      }
     }
 
   </style>
@@ -250,46 +293,7 @@
       </details>
       <div class="footer">Not for operational release by itself.</div>
     </section>
-  </div>
-
-    <section id="printReport" style="display:none;">
-      <div class="card">
-        <h2 style="margin:0 0 4px;">Tankering Calculator v 5.7.a — Per-Leg Report</h2>
-        <p class="note" id="printGeneratedAt" style="margin-top:0;">Generated report</p>
-        <div class="recommendation" id="printRecommendation"></div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">Trip Summary</div>
-        <div class="kpi">
-          <div class="box"><div class="label">Projected best net savings</div><div id="printBestSavings" class="value">—</div></div>
-          <div class="box"><div class="label">Recommended plan</div><div id="printBestOption" class="value plan-list">—</div></div>
-          <div class="box"><div class="label">Total suggested tanker-in fuel</div><div id="printBestTankerIn" class="value">—</div></div>
-          <div class="box"><div class="label">Estimated carry cost</div><div id="printBestCarryCost" class="value">—</div></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">Per-Leg Output</div>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Leg</th><th>Status</th><th>Fuel spread</th><th>Max landing / cap</th>
-                <th>Tanker above min out / in</th><th>Suggested start / arrival</th><th>Projected net</th><th>Carry cost</th><th>Baseline arrival</th>
-              </tr>
-            </thead>
-            <tbody id="printOutputRows"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card">
-        <p class="note"><b>Reminder:</b> This report is a planning aid only. Verify aircraft limitations, landing weight, runway performance, company SOPs, release fuel, reserves, MEL/CDL, and dispatcher/company guidance before using any tankering plan.</p>
-      </div>
-    </section>
-
-</div>
+  </div></div>
 
 <script>
 const aircraftDefaults = {
@@ -907,5 +911,45 @@ document.querySelectorAll(".tooltip").forEach(el => {
 
 loadDemo();
 </script>
+
+
+    <section id="printReport" style="display:none;">
+      <div class="card">
+        <h2 style="margin:0 0 4px;">Tankering Calculator v 5.7.a — Per-Leg Report</h2>
+        <p class="note" id="printGeneratedAt" style="margin-top:0;">Generated report</p>
+        <div class="recommendation" id="printRecommendation"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Trip Summary</div>
+        <div class="kpi">
+          <div class="box"><div class="label">Projected best net savings</div><div id="printBestSavings" class="value">—</div></div>
+          <div class="box"><div class="label">Recommended plan</div><div id="printBestOption" class="value plan-list">—</div></div>
+          <div class="box"><div class="label">Total suggested tanker-in fuel</div><div id="printBestTankerIn" class="value">—</div></div>
+          <div class="box"><div class="label">Estimated carry cost</div><div id="printBestCarryCost" class="value">—</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Per-Leg Output</div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Leg</th><th>Status</th><th>Fuel spread</th><th>Max landing / cap</th>
+                <th>Tanker above min out / in</th><th>Suggested start / arrival</th><th>Projected net</th><th>Carry cost</th><th>Baseline arrival</th>
+              </tr>
+            </thead>
+            <tbody id="printOutputRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="note"><b>Reminder:</b> This report is a planning aid only. Verify aircraft limitations, landing weight, runway performance, company SOPs, release fuel, reserves, MEL/CDL, and dispatcher/company guidance before using any tankering plan.</p>
+      </div>
+    </section>
+
+
 </body>
 </html>
