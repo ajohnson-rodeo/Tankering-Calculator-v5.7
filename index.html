@@ -58,6 +58,52 @@
     .tooltiptext{visibility:hidden;width:230px;background-color:#222;color:#fff;text-align:left;border-radius:6px;padding:8px;position:absolute;z-index:10;bottom:125%;left:50%;margin-left:-115px;font-size:12px}
     .tooltip:hover .tooltiptext{visibility:visible}
     .daily-input{min-width:95px;padding:8px;font-size:.9rem}.daily-route{min-width:120px;text-align:left}
+  
+    @media print {
+      @page { margin: 0.45in; }
+      body { background: #fff !important; color: #000 !important; }
+      body * { visibility: hidden !important; }
+      #printReport, #printReport * { visibility: visible !important; }
+      #printReport {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        display: block !important;
+        background: #fff !important;
+        color: #000 !important;
+        padding: 0 !important;
+      }
+      #printReport .card,
+      #printReport .box,
+      #printReport .recommendation {
+        background: #fff !important;
+        color: #000 !important;
+        border: 1px solid #999 !important;
+        box-shadow: none !important;
+      }
+      #printReport table { color: #000 !important; font-size: 10px !important; }
+      #printReport th { background: #eee !important; color: #000 !important; }
+      #printReport td, #printReport th {
+        border-bottom: 1px solid #aaa !important;
+        padding: 6px !important;
+      }
+      #printReport .good,
+      #printReport .bad,
+      #printReport .warn,
+      #printReport .muted,
+      #printReport .note,
+      #printReport .mini {
+        color: #000 !important;
+      }
+      #printReport .pill {
+        color: #000 !important;
+        border: 1px solid #333 !important;
+        background: #fff !important;
+      }
+      .no-print { display: none !important; }
+    }
+
   </style>
 </head>
 <body>
@@ -121,7 +167,10 @@
     </section>
 
     <section class="card">
-      <div class="section-title">Per-Leg Output</div>
+      <div class="section-title">
+        <span>Per-Leg Output</span>
+        <button class="secondary no-print" onclick="exportPerLegReport()">Export / Print PDF</button>
+      </div>
       <div style="overflow-x:auto;">
         <table>
           <thead>
@@ -202,6 +251,44 @@
       <div class="footer">Not for operational release by itself.</div>
     </section>
   </div>
+
+    <section id="printReport" style="display:none;">
+      <div class="card">
+        <h2 style="margin:0 0 4px;">Tankering Calculator v 5.7.a — Per-Leg Report</h2>
+        <p class="note" id="printGeneratedAt" style="margin-top:0;">Generated report</p>
+        <div class="recommendation" id="printRecommendation"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Trip Summary</div>
+        <div class="kpi">
+          <div class="box"><div class="label">Projected best net savings</div><div id="printBestSavings" class="value">—</div></div>
+          <div class="box"><div class="label">Recommended plan</div><div id="printBestOption" class="value plan-list">—</div></div>
+          <div class="box"><div class="label">Total suggested tanker-in fuel</div><div id="printBestTankerIn" class="value">—</div></div>
+          <div class="box"><div class="label">Estimated carry cost</div><div id="printBestCarryCost" class="value">—</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Per-Leg Output</div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Leg</th><th>Status</th><th>Fuel spread</th><th>Max landing / cap</th>
+                <th>Tanker above min out / in</th><th>Suggested start / arrival</th><th>Projected net</th><th>Carry cost</th><th>Baseline arrival</th>
+              </tr>
+            </thead>
+            <tbody id="printOutputRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <p class="note"><b>Reminder:</b> This report is a planning aid only. Verify aircraft limitations, landing weight, runway performance, company SOPs, release fuel, reserves, MEL/CDL, and dispatcher/company guidance before using any tankering plan.</p>
+      </div>
+    </section>
+
 </div>
 
 <script>
@@ -721,6 +808,50 @@ function calculateActual(tryTime = true){
   document.getElementById("actualNet").textContent = money(net);
   document.getElementById("actualNet").className = "value " + (net >= 0 ? "good" : "bad");
 }
+
+
+function buildPrintReport() {
+  calculate();
+
+  const now = new Date();
+  const generated = now.toLocaleString([], {
+    year: "numeric", month: "short", day: "2-digit",
+    hour: "2-digit", minute: "2-digit"
+  });
+
+  const generatedEl = document.getElementById("printGeneratedAt");
+  if (generatedEl) generatedEl.textContent = "Generated: " + generated;
+
+  const printRecommendation = document.getElementById("printRecommendation");
+  const recommendation = document.getElementById("recommendation");
+  if (printRecommendation && recommendation) printRecommendation.innerHTML = recommendation.innerHTML;
+
+  [["bestSavings","printBestSavings"],["bestOption","printBestOption"],["bestTankerIn","printBestTankerIn"],["bestCarryCost","printBestCarryCost"]].forEach(([sourceId, destId]) => {
+    const source = document.getElementById(sourceId);
+    const dest = document.getElementById(destId);
+    if (source && dest) {
+      dest.innerHTML = source.innerHTML;
+      dest.className = source.className;
+    }
+  });
+
+  const outputRows = document.getElementById("outputRows");
+  const printRows = document.getElementById("printOutputRows");
+  if (outputRows && printRows) printRows.innerHTML = outputRows.innerHTML;
+
+  const report = document.getElementById("printReport");
+  if (report) report.style.display = "block";
+}
+
+function exportPerLegReport() {
+  buildPrintReport();
+  setTimeout(() => window.print(), 100);
+}
+
+window.addEventListener("afterprint", () => {
+  const report = document.getElementById("printReport");
+  if (report) report.style.display = "none";
+});
 
 function loadDemo(){
   document.getElementById("legs").innerHTML = "";
