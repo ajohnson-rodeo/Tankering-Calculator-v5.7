@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Tankering Calculator v 5.7.a</title>
+  <title>Tankering Calculator v 5.8</title>
   <style>
     :root {
       --bg:#07111f; --card:#101827; --card2:#0b1220; --line:#2c3b52;
@@ -147,7 +147,42 @@
       }
     }
 
-  </style>
+  
+.import-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.import-status{margin-top:8px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#050b16;color:var(--muted);font-size:.78rem;line-height:1.35}
+.import-status.good{border-color:rgba(34,197,94,.45)}
+.import-status.warn{border-color:rgba(245,158,11,.45)}
+.import-status.bad{border-color:rgba(239,68,68,.45)}
+
+.document-window{
+  margin-top:8px;
+  display:grid;
+  gap:6px;
+}
+.document-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:#050b16;
+  color:var(--muted);
+  font-size:.78rem;
+}
+.document-item strong{
+  color:var(--text);
+  font-weight:800;
+}
+.document-name{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width:65%;
+  text-align:right;
+}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -236,16 +271,25 @@
         <label>Selected leg status
           <input id="actualLegStatus" type="text" value="—" readonly>
         </label>
-        <label>Actual fuel out, lb
+        <label>Validation input mode
+          <select id="actualValidationMode">
+            <option value="outIn">Block Out + Block In</option>
+            <option value="inUsed">Block In + Fuel Used</option>
+          </select>
+        </label>
+        <label>Block-out fuel, lb
           <input id="actualOut" type="number" value="7146" step="1" inputmode="decimal">
         </label>
-        <label>Actual fuel in, lb
+        <label>Block-in fuel, lb
           <input id="actualIn" type="number" value="5500" step="1" inputmode="decimal">
         </label>
-        <label>Non-tanker arrival fuel, lb
+        <label>Fuel used, lb
+          <input id="actualFuelUsedInput" type="number" value="1646" step="1" inputmode="decimal">
+        </label>
+        <label>Planned landing fuel, lb
           <input id="actualNTArr" type="number" value="2000" step="1" inputmode="decimal">
         </label>
-        <label>Non-tanker fuel used, lb
+        <label>Planned fuel used, lb
           <input id="actualNTBurn" type="number" value="1339" step="1" inputmode="decimal">
         </label>
         <label>Takeoff time, optional 24hr format
@@ -257,7 +301,7 @@
         <label>Actual flight time, hours
           <input id="actualETE" type="number" value="1.0" step="0.1" inputmode="decimal">
         </label>
-        <label>Actual tanker fuel used, lb
+        <label>Actual fuel used, lb
           <input id="actualTankerBurn" type="number" readonly>
         </label>
         <label>Actual carry penalty, %/flight hour
@@ -268,7 +312,7 @@
         </label>
       </div>
       <div class="row-actions"><button onclick="calculateActual()">Validate Actual</button></div>
-      <p class="note">Non-tanker fuel used auto-fills from the selected leg’s Fuel to Destination. Non-tanker arrival fuel defaults to 2,000 lb planned landing fuel, but can be manually changed for weather/diverts.</p>
+      <p class="note">Post-flight validation has two modes. Use Block Out + Block In, or use Block In + Fuel Used if those values are easier to read from the avionics after landing. The calculator auto-fills the missing value and uses Actual Fuel Used for validation.</p>
     </section>
 
     <section class="card half">
@@ -287,7 +331,7 @@
         <summary>Formula notes / assumptions</summary>
         <div class="note" style="margin-top:10px;">
           <p><b>v5.7.a logic:</b> Minimum Required Fuel is treated as required operational fuel. The tool only evaluates fuel carried above Minimum Required Fuel as economic tanker fuel.</p>
-          <p><b>Actual validator:</b> Actual carry penalty = ((Actual Out − Actual In) − Planned Leg Fuel) ÷ (Actual Out − (Planned Leg Fuel + Non-Tanker Arrival Fuel)) ÷ Actual Flight Time × 100.</p>
+          <p><b>Actual validator:</b> Actual fuel used is either Block-out minus Block-in, or entered directly with Block-in fuel. Extra burn = Actual fuel used − selected leg planned Fuel to Destination. Tankered-in fuel = Block-in fuel − planned landing fuel.</p>
           <p>This is a planning aid only. Verify W&B, landing weight, runway analysis, reserves, MEL/CDL, fuel release, and company SOPs.</p>
         </div>
       </details>
@@ -295,6 +339,7 @@
     </section>
   </div></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 const aircraftDefaults = {
   "CE-750": { maxFuel: 13031, carryPenaltyPctHr: 4.3 },
@@ -413,6 +458,23 @@ function addLeg(values = {}){
   div.id = "leg-" + legCount;
   div.innerHTML = `
     <h3><span>Leg ${legCount}</span><span id="legStatusPill-${legCount}" class="pill">Not calculated</span></h3>
+    <div class="import-actions">
+      <button class="secondary" type="button" onclick="document.getElementById('foreflightFile-${legCount}').click()">Import ForeFlight Briefing</button>
+      <button class="secondary" type="button" onclick="document.getElementById('tripReportFile-${legCount}').click()">Import Trip Report</button>
+      <input id="foreflightFile-${legCount}" type="file" accept="application/pdf,.pdf" style="display:none">
+      <input id="tripReportFile-${legCount}" type="file" accept="application/pdf,.pdf" style="display:none">
+    </div>
+    <div class="document-window">
+      <div class="document-item">
+        <strong>ForeFlight Briefing</strong>
+        <span id="foreflightDocName-${legCount}" class="document-name">No file uploaded</span>
+      </div>
+      <div class="document-item">
+        <strong>Trip Report</strong>
+        <span id="tripReportDocName-${legCount}" class="document-name">No file uploaded</span>
+      </div>
+    </div>
+    <div id="importStatus-${legCount}" class="import-status">No documents imported for this leg.</div>
     <div class="inputs">
       <label>Route / note
         <input id="route-${legCount}" type="text" value="${values.route || "KAAA - KBBB"}" placeholder="KAAA - KBBB" autocomplete="off">
@@ -464,10 +526,19 @@ function addLeg(values = {}){
       </label>
     </div>
     <div class="mini" id="constraint-${legCount}"></div>
-    <div class="row-actions"><button class="secondary" onclick="removeLeg(${legCount})">Remove Leg</button></div>
+    
+    <div class="row-actions">
+      <button class="secondary" onclick="insertLegAfter(${legCount})">Insert Leg After</button>
+      <button class="secondary" onclick="removeLeg(${legCount})">Remove Leg</button>
+    </div>
   `;
 
   document.getElementById("legs").appendChild(div);
+
+  const foreflightNameEl = document.getElementById("foreflightDocName-" + legCount);
+  const tripReportNameEl = document.getElementById("tripReportDocName-" + legCount);
+  if (foreflightNameEl && values.foreflightDocName) foreflightNameEl.textContent = values.foreflightDocName;
+  if (tripReportNameEl && values.tripReportDocName) tripReportNameEl.textContent = values.tripReportDocName;
   const id = legCount;
   const burnInput = document.getElementById("burn-" + id);
   const startInput = document.getElementById("start-" + id);
@@ -513,9 +584,110 @@ function addLeg(values = {}){
     }
   });
 
+
+  const foreflightFileInput = document.getElementById("foreflightFile-" + id);
+  const tripReportFileInput = document.getElementById("tripReportFile-" + id);
+
+  if (foreflightFileInput) {
+    foreflightFileInput.addEventListener("change", async event => {
+      const file = event.target.files && event.target.files[0];
+      if (file) {
+        const nameEl = document.getElementById("foreflightDocName-" + id);
+        if (nameEl) nameEl.textContent = file.name;
+        await importForeFlightBriefing(id, file);
+      }
+      event.target.value = "";
+    });
+  }
+
+  if (tripReportFileInput) {
+    tripReportFileInput.addEventListener("change", async event => {
+      const file = event.target.files && event.target.files[0];
+      if (file) {
+        const nameEl = document.getElementById("tripReportDocName-" + id);
+        if (nameEl) nameEl.textContent = file.name;
+        await importTripReport(id, file);
+      }
+      event.target.value = "";
+    });
+  }
+
   syncAllAdjacentLegFuel();
   syncAllAdjacentLegFuelPrices();
   calculate();
+}
+
+
+function getLegValues(id) {
+  return {
+    route: document.getElementById("route-" + id)?.value || "KAAA - KBBB",
+    ete: n("ete-" + id),
+    burn: n("burn-" + id),
+    start: n("start-" + id),
+    minReq: n("minReq-" + id),
+    nextStart: n("nextStart-" + id),
+    minBuyGal: n("minBuyGal-" + id),
+    fees: n("fees-" + id),
+    priceHere: n("priceHere-" + id),
+    priceNext: n("priceNext-" + id),
+    zfw: n("zfw-" + id),
+    mlgw: n("mlgw-" + id),
+    mtogw: n("mtogw-" + id),
+    penalty: document.getElementById("penalty-" + id)?.value || "",
+    notes: document.getElementById("notes-" + id)?.value || "",
+    foreflightDocName: document.getElementById("foreflightDocName-" + id)?.textContent || "No file uploaded",
+    tripReportDocName: document.getElementById("tripReportDocName-" + id)?.textContent || "No file uploaded"
+  };
+}
+
+function getAllLegValues() {
+  return legIds().map(id => getLegValues(id));
+}
+
+function rebuildLegsFromValues(values) {
+  const legsEl = document.getElementById("legs");
+  legsEl.innerHTML = "";
+  legCount = 0;
+
+  values.forEach(v => addLeg(v));
+
+  if (typeof syncAllAdjacentLegFuel === "function") syncAllAdjacentLegFuel();
+  if (typeof syncAllAdjacentLegFuelPrices === "function") syncAllAdjacentLegFuelPrices();
+
+  calculate();
+}
+
+function insertLegAfter(id) {
+  const ids = legIds();
+  const index = ids.indexOf(id);
+  const values = getAllLegValues();
+
+  const insertIndex = index >= 0 ? index + 1 : values.length;
+  const previous = values[index] || {};
+  const next = values[insertIndex] || {};
+
+  const defaultBurn = next.burn || previous.burn || 1339;
+
+  const newLeg = {
+    route: "KAAA - KBBB",
+    ete: 0.5,
+    burn: defaultBurn,
+    start: defaultBurn + 2000,
+    minReq: defaultBurn + 2000,
+    nextStart: next.burn || previous.nextStart || defaultBurn,
+    minBuyGal: previous.minBuyGal || 200,
+    fees: previous.fees || 300,
+    priceHere: previous.priceNext || previous.priceHere || 6.09,
+    priceNext: next.priceHere || previous.priceNext || 7.29,
+    zfw: previous.zfw || 22322,
+    mlgw: previous.mlgw || 31800,
+    mtogw: previous.mtogw || 36100,
+    penalty: previous.penalty || "",
+    notes: "Inserted leg"
+  };
+
+  values.splice(insertIndex, 0, newLeg);
+  rebuildLegsFromValues(values);
 }
 
 function removeLeg(id){
@@ -720,6 +892,7 @@ function syncActualDiff(){
 function syncActualValidatorFromSelectedLeg(force = false){
   const id = getSelectedActualLegId();
   if(!id) return;
+
   const burn = n("burn-" + id);
   const ete = n("ete-" + id);
 
@@ -727,14 +900,18 @@ function syncActualValidatorFromSelectedLeg(force = false){
   const ntArr = document.getElementById("actualNTArr");
   const eteEl = document.getElementById("actualETE");
 
+  // Planned fuel used comes from the selected leg's Fuel to Destination.
   if(ntBurn && (force || ntBurn.dataset.manualOverride !== "true")){
     ntBurn.value = Math.round(burn);
     ntBurn.dataset.manualOverride = "false";
   }
+
+  // Planned landing fuel defaults to 2,000 lb, editable for wx/diverts.
   if(ntArr && (force || ntArr.dataset.manualOverride !== "true")){
     ntArr.value = 2000;
     ntArr.dataset.manualOverride = "false";
   }
+
   if(eteEl && (force || eteEl.dataset.manualOverride !== "true")){
     eteEl.value = ete ? ete.toFixed(1) : "";
     eteEl.dataset.manualOverride = "false";
@@ -743,6 +920,7 @@ function syncActualValidatorFromSelectedLeg(force = false){
   syncActualDiff();
   updateActualLegStatus();
 }
+
 
 function normalizeHHMM(value){
   const digits = String(value || "").replace(/\D/g, "").slice(0,4);
@@ -760,102 +938,173 @@ function hhmmToMinutes(value){
 function sanitizeHHMMInput(el){
   if(el) el.value = String(el.value || "").replace(/\D/g, "").slice(0,4);
 }
-function calculateActualTimeFromTakeoffLanding(){
-  const takeoffEl = document.getElementById("actualTakeoffTime");
-  const landingEl = document.getElementById("actualLandingTime");
-  const eteEl = document.getElementById("actualETE");
-  if(!takeoffEl || !landingEl || !eteEl) return;
-  sanitizeHHMMInput(takeoffEl);
-  sanitizeHHMMInput(landingEl);
-  const takeoff = hhmmToMinutes(takeoffEl.value);
-  const landing = hhmmToMinutes(landingEl.value);
-  if(takeoff === null || landing === null) return;
-  if(normalizeHHMM(takeoffEl.value).length !== 4 || normalizeHHMM(landingEl.value).length !== 4) return;
-  let delta = landing - takeoff;
-  if(delta < 0) delta += 24 * 60;
-  eteEl.value = (delta / 60).toFixed(1);
-  eteEl.dataset.manualOverride = "false";
-}
-
 function calculateActual(tryTime = true){
-  if(tryTime) calculateActualTimeFromTakeoffLanding();
+  if(tryTime && typeof calculateActualTimeFromTakeoffLanding === "function") {
+    calculateActualTimeFromTakeoffLanding();
+  }
+
   const density = n("density");
   const selectedId = getSelectedActualLegId();
   const priceHere = selectedId ? n("priceHere-" + selectedId) : 0;
   const diff = n("actualDiff");
   const ete = n("actualETE");
 
-  const actualOut = n("actualOut");
-  const actualIn = n("actualIn");
-  const ntArr = n("actualNTArr");
-  const plannedLegFuel = n("actualNTBurn");
+  const mode = document.getElementById("actualValidationMode")?.value || "outIn";
 
-  const actualBurn = Math.max(0, actualOut - actualIn);
-  document.getElementById("actualTankerBurn").value = Math.round(actualBurn);
+  const outEl = document.getElementById("actualOut");
+  const inEl = document.getElementById("actualIn");
+  const usedInputEl = document.getElementById("actualFuelUsedInput");
 
-  const extraBurn = Math.max(0, actualBurn - plannedLegFuel);
-  const tankeredIn = Math.max(0, actualIn - ntArr);
-  const normalStart = plannedLegFuel + ntArr;
-  const tankeredOut = Math.max(0, actualOut - normalStart);
-  const carryPenalty = (tankeredOut > 0 && ete > 0) ? (extraBurn / tankeredOut / ete) * 100 : 0;
-  document.getElementById("actualCarryPenaltyPctHr").value = carryPenalty.toFixed(1);
+  let blockOut = parseFloat(outEl?.value) || 0;
+  let blockIn = parseFloat(inEl?.value) || 0;
+  let actualFuelUsed = parseFloat(usedInputEl?.value) || 0;
+
+  if (mode === "outIn") {
+    actualFuelUsed = Math.max(0, blockOut - blockIn);
+    if (usedInputEl) {
+      usedInputEl.value = Math.round(actualFuelUsed);
+      usedInputEl.readOnly = true;
+    }
+    if (outEl) outEl.readOnly = false;
+  } else {
+    blockOut = blockIn + actualFuelUsed;
+    if (outEl) {
+      outEl.value = Math.round(blockOut);
+      outEl.readOnly = true;
+    }
+    if (usedInputEl) usedInputEl.readOnly = false;
+  }
+
+  const plannedLandingFuel = n("actualNTArr");
+  const plannedFuelUsed = n("actualNTBurn");
+
+  const usedField = document.getElementById("actualTankerBurn");
+  if (usedField) usedField.value = Math.round(actualFuelUsed);
+
+  const extraBurn = Math.max(0, actualFuelUsed - plannedFuelUsed);
+  const tankeredIn = Math.max(0, blockIn - plannedLandingFuel);
+
+  const normalStart = plannedFuelUsed + plannedLandingFuel;
+  const tankeredOut = Math.max(0, blockOut - normalStart);
+
+  const carryPenalty = (tankeredOut > 0 && ete > 0)
+    ? (extraBurn / tankeredOut / ete) * 100
+    : 0;
+
+  const penaltyField = document.getElementById("actualCarryPenaltyPctHr");
+  if (penaltyField) penaltyField.value = carryPenalty.toFixed(1);
 
   const grossSavings = density > 0 ? (tankeredIn / density) * diff : 0;
   const carryCost = density > 0 ? (extraBurn / density) * priceHere : 0;
   const net = grossSavings - carryCost;
 
-  document.getElementById("actualTankered").textContent = lbs(tankeredIn);
-  document.getElementById("actualExtraBurn").textContent = lbs(extraBurn);
-  document.getElementById("actualPPH").textContent = ete > 0 ? Math.round(actualBurn / ete).toLocaleString() + " lb/hr" : "—";
-  document.getElementById("actualSavings").textContent = money(grossSavings);
-  document.getElementById("actualSavings").className = "value " + (grossSavings >= 0 ? "good" : "bad");
-  document.getElementById("actualNet").textContent = money(net);
-  document.getElementById("actualNet").className = "value " + (net >= 0 ? "good" : "bad");
+  const tankeredEl = document.getElementById("actualTankered");
+  const extraBurnEl = document.getElementById("actualExtraBurn");
+  const pphEl = document.getElementById("actualPPH");
+  const savingsEl = document.getElementById("actualSavings");
+  const netEl = document.getElementById("actualNet");
+
+  if (tankeredEl) tankeredEl.textContent = lbs(tankeredIn);
+  if (extraBurnEl) extraBurnEl.textContent = lbs(extraBurn);
+  if (pphEl) pphEl.textContent = ete > 0 ? Math.round(actualFuelUsed / ete).toLocaleString() + " lb/hr" : "—";
+
+  if (savingsEl) {
+    savingsEl.textContent = money(grossSavings);
+    savingsEl.className = "value " + (grossSavings >= 0 ? "good" : "bad");
+  }
+
+  if (netEl) {
+    netEl.textContent = money(net);
+    netEl.className = "value " + (net >= 0 ? "good" : "bad");
+  }
 }
 
 
-function buildPrintReport() {
-  calculate();
 
-  const now = new Date();
-  const generated = now.toLocaleString([], {
-    year: "numeric", month: "short", day: "2-digit",
-    hour: "2-digit", minute: "2-digit"
-  });
-
-  const generatedEl = document.getElementById("printGeneratedAt");
-  if (generatedEl) generatedEl.textContent = "Generated: " + generated;
-
-  const printRecommendation = document.getElementById("printRecommendation");
-  const recommendation = document.getElementById("recommendation");
-  if (printRecommendation && recommendation) printRecommendation.innerHTML = recommendation.innerHTML;
-
-  [["bestSavings","printBestSavings"],["bestOption","printBestOption"],["bestTankerIn","printBestTankerIn"],["bestCarryCost","printBestCarryCost"]].forEach(([sourceId, destId]) => {
-    const source = document.getElementById(sourceId);
-    const dest = document.getElementById(destId);
-    if (source && dest) {
-      dest.innerHTML = source.innerHTML;
-      dest.className = source.className;
-    }
-  });
-
-  const outputRows = document.getElementById("outputRows");
-  const printRows = document.getElementById("printOutputRows");
-  if (outputRows && printRows) printRows.innerHTML = outputRows.innerHTML;
-
-  const report = document.getElementById("printReport");
-  if (report) report.style.display = "block";
+async function extractPdfText(file){
+  if(!window.pdfjsLib) throw new Error("PDF reader did not load. Check internet and reload.");
+  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  const data=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data}).promise;
+  const pages=[];
+  for(let i=1;i<=pdf.numPages;i++){
+    const page=await pdf.getPage(i);
+    const content=await page.getTextContent();
+    pages.push(content.items.map(item=>item.str).join(" "));
+  }
+  return pages.join("\n").replace(/\s+/g," ").trim();
 }
-
-function exportPerLegReport() {
-  buildPrintReport();
-  setTimeout(() => window.print(), 100);
+function setImportStatus(id,msg,kind=""){
+  const el=document.getElementById("importStatus-"+id);
+  if(!el)return;
+  el.textContent=msg;
+  el.className="import-status"+(kind?" "+kind:"");
 }
-
-window.addEventListener("afterprint", () => {
-  const report = document.getElementById("printReport");
-  if (report) report.style.display = "none";
-});
+function setLegField(id,prefix,value){
+  const el=document.getElementById(prefix+"-"+id);
+  if(!el||value===null||value===undefined||value==="")return false;
+  el.value=value;
+  return true;
+}
+function firstMatch(text,patterns){
+  for(const p of patterns){const m=text.match(p);if(m)return m;}
+  return null;
+}
+function parseAirportPair(text){
+  let m=text.match(/\b([KPC][A-Z0-9]{3})\s*[—–-]\s*([KPC][A-Z0-9]{3})\b/);
+  if(m)return{departure:m[1],destination:m[2]};
+  const d=firstMatch(text,[/\bDeparture\s+(?:ICAO\s+)?([KPC][A-Z0-9]{3})\b/i,/\bDEP\s+([KPC][A-Z0-9]{3})\b/i]);
+  const a=firstMatch(text,[/\bDestination\s+(?:ICAO\s+)?([KPC][A-Z0-9]{3})\b/i,/\bDEST\s+([KPC][A-Z0-9]{3})\b/i]);
+  return d&&a?{departure:d[1],destination:a[1]}:null;
+}
+function parseETEHours(text){
+  const m=firstMatch(text,[/\bETE\s+(\d{1,2})h\s*(\d{1,2})m\b/i,/\bETE\s+(\d{1,2}):(\d{2})\b/i]);
+  return m?Number((Number(m[1])+Number(m[2])/60).toFixed(2)):null;
+}
+function parseNumberAfterLabel(text,patterns){
+  for(const p of patterns){const m=text.match(p);if(m)return Number(String(m[1]).replace(/,/g,""));}
+  return null;
+}
+async function importForeFlightBriefing(id,file){
+  setImportStatus(id,"Reading ForeFlight briefing…");
+  try{
+    const text=await extractPdfText(file), imported=[], missing=[];
+    const airports=parseAirportPair(text);
+    if(airports){setLegField(id,"route",`${airports.departure} - ${airports.destination}`);imported.push("route");}else missing.push("route");
+    const ete=parseETEHours(text);
+    if(ete!==null){setLegField(id,"ete",ete);imported.push("ETE");}else missing.push("ETE");
+    const flightFuel=parseNumberAfterLabel(text,[/\bFlight Fuel\s+([\d,]+)\s*lbs?\b/i]);
+    if(flightFuel!==null){
+      setLegField(id,"burn",flightFuel);
+      setLegField(id,"start",flightFuel+2000);
+      setLegField(id,"minReq",flightFuel+2000);
+      if(typeof syncAdjacentLegFuel==="function")syncAdjacentLegFuel(id,"burn");
+      imported.push("flight fuel");
+    }else missing.push("flight fuel");
+    const zfw=parseNumberAfterLabel(text,[/\bZFW\s+([\d,]+)\s*lbs?\b/i,/\bZero Fuel Weight\s+([\d,]+)\s*lbs?\b/i]);
+    if(zfw!==null){setLegField(id,"zfw",zfw);imported.push("ZFW");}else missing.push("ZFW");
+    calculate();
+    setImportStatus(id,`ForeFlight imported: ${imported.join(", ")||"no recognized fields"}. ${missing.length?"Not found: "+missing.join(", ")+". ":""}Verify all values before use.`,imported.length?"good":"warn");
+  }catch(e){console.error(e);setImportStatus(id,"ForeFlight import failed: "+e.message,"bad");}
+}
+async function importTripReport(id,file){
+  setImportStatus(id,"Reading trip report…");
+  try{
+    const text=await extractPdfText(file), imported=[], missing=[];
+    const airports=parseAirportPair(text);
+    if(airports){setLegField(id,"route",`${airports.departure} - ${airports.destination}`);imported.push("route");}
+    const zfw=parseNumberAfterLabel(text,[/\bZFW\s*[:\-]?\s*([\d,]+)\s*lbs?\b/i,/\bZero Fuel Weight\s*[:\-]?\s*([\d,]+)\s*lbs?\b/i]);
+    if(zfw!==null){setLegField(id,"zfw",zfw);imported.push("ZFW");}else missing.push("ZFW");
+    const toMatches=[...text.matchAll(/\b(36,?100)\s*lb\s*\/\s*ST\b/gi)].map(m=>Number(m[1].replace(/,/g,"")));
+    const mtow=toMatches.length?Math.max(...toMatches):null;
+    if(mtow!==null){setLegField(id,"mtogw",mtow);imported.push("takeoff limit");}else missing.push("takeoff limit");
+    const ldMatches=[...text.matchAll(/\b(31,?800)\s*lb\s*\/\s*ST\b/gi)].map(m=>Number(m[1].replace(/,/g,"")));
+    const mlgw=ldMatches.length?31800:null;
+    if(mlgw!==null){setLegField(id,"mlgw",mlgw);imported.push("landing limit");}else missing.push("landing limit");
+    calculate();
+    setImportStatus(id,`Trip report imported: ${imported.join(", ")||"no recognized fields"}. ${missing.length?"Not found: "+missing.join(", ")+". ":""}Verify runway/configuration limits before use.`,imported.length?"good":"warn");
+  }catch(e){console.error(e);setImportStatus(id,"Trip report import failed: "+e.message,"bad");}
+}
 
 function loadDemo(){
   document.getElementById("legs").innerHTML = "";
@@ -884,7 +1133,12 @@ document.getElementById("actualLegSelect").addEventListener("change", () => {
   syncActualValidatorFromSelectedLeg(true);
   calculateActual(false);
 });
-["actualOut","actualIn"].forEach(id => document.getElementById(id).addEventListener("input", () => calculateActual()));
+["actualOut","actualIn","actualFuelUsedInput"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("input", () => calculateActual());
+});
+const actualValidationModeEl = document.getElementById("actualValidationMode");
+if (actualValidationModeEl) actualValidationModeEl.addEventListener("change", () => calculateActual());
 ["actualNTBurn","actualNTArr","actualETE"].forEach(id => {
   document.getElementById(id).addEventListener("input", () => {
     document.getElementById(id).dataset.manualOverride = "true";
