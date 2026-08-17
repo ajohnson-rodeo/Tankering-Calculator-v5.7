@@ -197,6 +197,14 @@
   #printReport .good,#printReport .bad,#printReport .warn,#printReport .muted,#printReport .note,#printReport .mini,#printReport .pill { color:#000!important; }
   .no-print { display:none!important; }
 }
+
+@media(max-width:680px){
+  .section-title > .row-actions{
+    width:100%;
+    justify-content:flex-start;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -206,7 +214,15 @@
 
   <div class="grid">
     <section class="card two-thirds">
-      <div class="section-title"><span>Aircraft / Global Assumptions</span><span class="pill">Planning aid only</span></div>
+      <div class="section-title">
+        <span>Aircraft / Global Assumptions</span>
+        <div class="row-actions" style="margin-top:0;">
+          <button class="secondary" type="button" onclick="document.getElementById('importDataPdfFile').click()">Import Data PDF</button>
+          <span class="pill">Planning aid only</span>
+          <input id="importDataPdfFile" type="file" accept="application/pdf,.pdf" style="display:none">
+        </div>
+      </div>
+      <div id="importDataPdfStatus" class="import-status" style="margin-bottom:10px;">No saved input PDF imported.</div>
       <div class="inputs">
         <label>Aircraft preset
           <select id="aircraft">
@@ -1084,6 +1100,160 @@ async function importForeFlightBriefing(id,file){
   }catch(e){console.error(e);setImportStatus(id,"ForeFlight import failed: "+e.message,"bad");}
 }
 
+
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = "";
+  bytes.forEach(byte => binary += String.fromCharCode(byte));
+  return btoa(binary);
+}
+
+function base64ToUtf8(str) {
+  const binary = atob(str);
+  const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function buildInputDataPayload() {
+  const ids = legIds();
+
+  return {
+    format: "TANKERING_INPUT_DATA_V1",
+    version: "5.7.a",
+    exportedAt: new Date().toISOString(),
+    globals: {
+      aircraft: document.getElementById("aircraft")?.value || "CE-750",
+      density: document.getElementById("density")?.value || "",
+      maxFuel: document.getElementById("maxFuel")?.value || "",
+      landingCapPct: document.getElementById("landingCapPct")?.value || "",
+      arrivalBuffer: document.getElementById("arrivalBuffer")?.value || "",
+      carryPenaltyPctHr: document.getElementById("carryPenaltyPctHr")?.value || ""
+    },
+    legs: ids.map(id => ({
+      route: document.getElementById("route-" + id)?.value || "KAAA - KBBB",
+      ete: document.getElementById("ete-" + id)?.value || "",
+      burn: document.getElementById("burn-" + id)?.value || "",
+      start: document.getElementById("start-" + id)?.value || "",
+      minReq: document.getElementById("minReq-" + id)?.value || "",
+      nextStart: document.getElementById("nextStart-" + id)?.value || "",
+      priceHere: document.getElementById("priceHere-" + id)?.value || "",
+      priceNext: document.getElementById("priceNext-" + id)?.value || "",
+      fees: document.getElementById("fees-" + id)?.value || "",
+      minBuyGal: document.getElementById("minBuyGal-" + id)?.value || "",
+      zfw: document.getElementById("zfw-" + id)?.value || "",
+      mlgw: document.getElementById("mlgw-" + id)?.value || "",
+      mtogw: document.getElementById("mtogw-" + id)?.value || "",
+      penalty: document.getElementById("penalty-" + id)?.value || "",
+      notes: document.getElementById("notes-" + id)?.value || ""
+    }))
+  };
+}
+
+function applyInputDataPayload(payload) {
+  if (!payload || payload.format !== "TANKERING_INPUT_DATA_V1" || !Array.isArray(payload.legs)) {
+    throw new Error("This PDF does not contain compatible Tankering Calculator input data.");
+  }
+
+  const g = payload.globals || {};
+
+  if (document.getElementById("aircraft") && g.aircraft) {
+    document.getElementById("aircraft").value = g.aircraft;
+  }
+  if (document.getElementById("density") && g.density !== undefined) {
+    document.getElementById("density").value = g.density;
+  }
+  if (document.getElementById("maxFuel") && g.maxFuel !== undefined) {
+    document.getElementById("maxFuel").value = g.maxFuel;
+  }
+  if (document.getElementById("landingCapPct") && g.landingCapPct !== undefined) {
+    document.getElementById("landingCapPct").value = g.landingCapPct;
+  }
+  if (document.getElementById("arrivalBuffer") && g.arrivalBuffer !== undefined) {
+    document.getElementById("arrivalBuffer").value = g.arrivalBuffer;
+  }
+  if (document.getElementById("carryPenaltyPctHr") && g.carryPenaltyPctHr !== undefined) {
+    document.getElementById("carryPenaltyPctHr").value = g.carryPenaltyPctHr;
+  }
+
+  document.getElementById("legs").innerHTML = "";
+  legCount = 0;
+
+  payload.legs.forEach(leg => {
+    addLeg({
+      route: leg.route || "KAAA - KBBB",
+      ete: leg.ete,
+      burn: leg.burn,
+      start: leg.start,
+      minReq: leg.minReq,
+      nextStart: leg.nextStart,
+      priceHere: leg.priceHere,
+      priceNext: leg.priceNext,
+      fees: leg.fees,
+      minBuyGal: leg.minBuyGal,
+      zfw: leg.zfw,
+      mlgw: leg.mlgw,
+      mtogw: leg.mtogw,
+      penalty: leg.penalty,
+      notes: leg.notes || ""
+    });
+  });
+
+  if (typeof syncAllAdjacentLegFuel === "function") syncAllAdjacentLegFuel();
+  if (typeof syncAllAdjacentLegFuelPrices === "function") syncAllAdjacentLegFuelPrices();
+
+  calculate();
+
+  if (typeof refreshActualLegSelect === "function") refreshActualLegSelect();
+  if (typeof syncActualValidatorFromSelectedLeg === "function") syncActualValidatorFromSelectedLeg(true);
+  if (typeof calculateActual === "function") calculateActual(false);
+}
+
+async function importSavedInputPdf(file) {
+  const status = document.getElementById("importDataPdfStatus");
+
+  if (status) {
+    status.textContent = "Reading saved input PDF…";
+    status.className = "import-status";
+  }
+
+  try {
+    const pdfText = await extractPdfText(file);
+
+    // PDF.js sometimes inserts spaces between chunks, so normalize around payload marker.
+    const compact = pdfText.replace(/\s+/g, "");
+    const marker = "TANKERING_DATA_V1:";
+    const index = compact.indexOf(marker);
+
+    if (index === -1) {
+      throw new Error("No machine-readable input data was found. Use an Input Data PDF exported by this calculator version.");
+    }
+
+    const afterMarker = compact.slice(index + marker.length);
+    const endMarker = ":END_TANKERING_DATA";
+    const endIndex = afterMarker.indexOf(endMarker);
+
+    if (endIndex === -1) {
+      throw new Error("The saved input data payload appears incomplete.");
+    }
+
+    const encoded = afterMarker.slice(0, endIndex);
+    const payload = JSON.parse(base64ToUtf8(encoded));
+
+    applyInputDataPayload(payload);
+
+    if (status) {
+      status.textContent = `Imported ${payload.legs.length} leg${payload.legs.length === 1 ? "" : "s"} from ${file.name}. Verify all values before use.`;
+      status.className = "import-status good";
+    }
+  } catch (error) {
+    console.error(error);
+    if (status) {
+      status.textContent = "Import failed: " + error.message;
+      status.className = "import-status bad";
+    }
+  }
+}
+
 function escapeHtml(value) {
   return String(value ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
@@ -1117,18 +1287,71 @@ function exportPerLegReport() {
 }
 function exportTripInputReport() {
   const ids=legIds();
-  const rows=ids.map((id,index)=>{const v=p=>document.getElementById(p+"-"+id)?.value??"";return `<tr><td>${index+1}</td><td>${escapeHtml(v("route"))}</td><td>${escapeHtml(v("ete"))}</td><td>${escapeHtml(v("burn"))}</td><td>${escapeHtml(v("start"))}</td><td>${escapeHtml(v("minReq"))}</td><td>${escapeHtml(v("nextStart"))}</td><td>${escapeHtml(v("priceHere"))}</td><td>${escapeHtml(v("priceNext"))}</td><td>${escapeHtml(v("fees"))}</td><td>${escapeHtml(v("minBuyGal"))}</td><td>${escapeHtml(v("zfw"))}</td><td>${escapeHtml(v("mlgw"))}</td><td>${escapeHtml(v("mtogw"))}</td><td>${escapeHtml(v("penalty"))}</td><td>${escapeHtml(v("notes"))}</td></tr>`;}).join("");
+  const rows=ids.map((id,index)=>{
+    const v=p=>document.getElementById(p+"-"+id)?.value??"";
+    return `<tr>
+      <td>${index+1}</td>
+      <td>${escapeHtml(v("route"))}</td>
+      <td>${escapeHtml(v("ete"))}</td>
+      <td>${escapeHtml(v("burn"))}</td>
+      <td>${escapeHtml(v("start"))}</td>
+      <td>${escapeHtml(v("minReq"))}</td>
+      <td>${escapeHtml(v("nextStart"))}</td>
+      <td>${escapeHtml(v("priceHere"))}</td>
+      <td>${escapeHtml(v("priceNext"))}</td>
+      <td>${escapeHtml(v("fees"))}</td>
+      <td>${escapeHtml(v("minBuyGal"))}</td>
+      <td>${escapeHtml(v("zfw"))}</td>
+      <td>${escapeHtml(v("mlgw"))}</td>
+      <td>${escapeHtml(v("mtogw"))}</td>
+      <td>${escapeHtml(v("penalty"))}</td>
+      <td>${escapeHtml(v("notes"))}</td>
+    </tr>`;
+  }).join("");
+
+  const payload = buildInputDataPayload();
+  const encodedPayload = utf8ToBase64(JSON.stringify(payload));
+
   showPrintReport(`
-    <div class="card"><h2 style="margin:0 0 4px;">Tankering Calculator v 5.7.a — Saved Input Data</h2><div class="note">Generated: ${escapeHtml(reportTimestamp())}</div><p class="note">Use this report to quickly reconstruct a trip if the browser reloads or clears the calculator.</p></div>
-    <div class="card"><div class="section-title">Aircraft / Global Assumptions</div><table><tbody>
-      <tr><th>Aircraft</th><td>${escapeHtml(document.getElementById("aircraft")?.value||"")}</td></tr>
-      <tr><th>Fuel density</th><td>${escapeHtml(document.getElementById("density")?.value||"")} lb/gal</td></tr>
-      <tr><th>Maximum usable fuel</th><td>${escapeHtml(document.getElementById("maxFuel")?.value||"")} lb</td></tr>
-      <tr><th>Landing fuel cap</th><td>${escapeHtml(document.getElementById("landingCapPct")?.value||"")}%</td></tr>
-      <tr><th>Arrival buffer</th><td>${escapeHtml(document.getElementById("arrivalBuffer")?.value||"")} lb</td></tr>
-      <tr><th>Default carry penalty</th><td>${escapeHtml(document.getElementById("carryPenaltyPctHr")?.value||"")}%/hr</td></tr></tbody></table></div>
-    <div class="card"><div class="section-title">Leg Input Data</div><table><thead><tr><th>Leg</th><th>Route</th><th>ETE hr</th><th>Fuel to Dest lb</th><th>Start Fuel lb</th><th>Min Req lb</th><th>Next Leg Flight Fuel lb</th><th>Price Here</th><th>Price Next</th><th>Fees Waived</th><th>Min Buy gal</th><th>ZFW</th><th>MLGW</th><th>MTOGW</th><th>Penalty %/hr</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table></div>`);
+    <div class="card">
+      <h2 style="margin:0 0 4px;">Tankering Calculator v 5.7.a — Saved Input Data</h2>
+      <div class="note">Generated: ${escapeHtml(reportTimestamp())}</div>
+      <p class="note">Use this report to reconstruct a trip if the browser reloads or clears the calculator. This PDF can also be re-imported using <b>Import Data PDF</b>.</p>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Aircraft / Global Assumptions</div>
+      <table><tbody>
+        <tr><th>Aircraft</th><td>${escapeHtml(document.getElementById("aircraft")?.value||"")}</td></tr>
+        <tr><th>Fuel density</th><td>${escapeHtml(document.getElementById("density")?.value||"")} lb/gal</td></tr>
+        <tr><th>Maximum usable fuel</th><td>${escapeHtml(document.getElementById("maxFuel")?.value||"")} lb</td></tr>
+        <tr><th>Landing fuel cap</th><td>${escapeHtml(document.getElementById("landingCapPct")?.value||"")}%</td></tr>
+        <tr><th>Arrival buffer</th><td>${escapeHtml(document.getElementById("arrivalBuffer")?.value||"")} lb</td></tr>
+        <tr><th>Default carry penalty</th><td>${escapeHtml(document.getElementById("carryPenaltyPctHr")?.value||"")}%/hr</td></tr>
+      </tbody></table>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Leg Input Data</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Leg</th><th>Route</th><th>ETE hr</th><th>Fuel to Dest lb</th>
+            <th>Start Fuel lb</th><th>Min Req lb</th><th>Next Leg Flight Fuel lb</th>
+            <th>Price Here</th><th>Price Next</th><th>Fees Waived</th><th>Min Buy gal</th>
+            <th>ZFW</th><th>MLGW</th><th>MTOGW</th><th>Penalty %/hr</th><th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+
+    <div style="font-size:1px;line-height:1px;color:#fff;word-break:break-all;">
+      TANKERING_DATA_V1:${encodedPayload}:END_TANKERING_DATA
+    </div>
+  `);
 }
+
 window.addEventListener("afterprint",()=>{const report=document.getElementById("printReport");if(report){report.style.display="none";report.innerHTML="";}});
 
 function loadDemo(){
@@ -1187,6 +1410,17 @@ document.querySelectorAll(".tooltip").forEach(el => {
     tip.style.visibility = visible ? "hidden" : "visible";
   });
 });
+
+
+const importDataPdfFile = document.getElementById("importDataPdfFile");
+if (importDataPdfFile) {
+  importDataPdfFile.addEventListener("change", async event => {
+    const file = event.target.files && event.target.files[0];
+    if (file) await importSavedInputPdf(file);
+    event.target.value = "";
+  });
+}
+
 
 loadDemo();
 </script>
