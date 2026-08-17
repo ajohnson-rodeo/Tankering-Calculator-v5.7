@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Tankering Calculator v 6.0</title>
+  <title>Tankering Calculator v 5.7.a</title>
   <style>
     :root {
       --bg:#07111f; --card:#101827; --card2:#0b1220; --line:#2c3b52;
@@ -182,11 +182,26 @@
   max-width:65%;
   text-align:right;
 }
+
+@media print {
+  @page { margin: 0.4in; size: auto; }
+  html,body { margin:0!important; padding:0!important; background:#fff!important; color:#000!important; height:auto!important; min-height:0!important; overflow:visible!important; }
+  .wrap { display:none!important; }
+  #printReport { display:block!important; position:static!important; width:100%!important; margin:0!important; padding:0!important; background:#fff!important; color:#000!important; }
+  #printReport .card,#printReport .box,#printReport .recommendation { background:#fff!important; color:#000!important; border:1px solid #999!important; box-shadow:none!important; break-inside:avoid; page-break-inside:avoid; }
+  #printReport .card { margin:0 0 10px 0!important; padding:10px!important; }
+  #printReport table { width:100%!important; border-collapse:collapse!important; color:#000!important; font-size:9.5px!important; }
+  #printReport th,#printReport td { border:1px solid #aaa!important; padding:5px!important; color:#000!important; background:#fff!important; }
+  #printReport th { background:#eee!important; }
+  #printReport tr { break-inside:avoid; page-break-inside:avoid; }
+  #printReport .good,#printReport .bad,#printReport .warn,#printReport .muted,#printReport .note,#printReport .mini,#printReport .pill { color:#000!important; }
+  .no-print { display:none!important; }
+}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Tankering Calculator v 6.0</h1>
+  <h1>Tankering Calculator v 5.7.a</h1>
   <p class="subtitle">Find a way to YES. Don't leave money on the table.</p>
 
   <div class="grid">
@@ -235,7 +250,10 @@
     </section>
 
     <section class="card">
-      <div class="section-title">Trip Summary</div>
+      <div class="section-title">
+        <span>Trip Summary</span>
+        <button class="secondary no-print" type="button" onclick="exportTripInputReport()">Export Input Data PDF</button>
+      </div>
       <div class="kpi">
         <div class="box"><div class="label">Projected best net savings</div><div id="bestSavings" class="value">$0</div></div>
         <div class="box"><div class="label">Recommended plan</div><div id="bestOption" class="value plan-list">—</div></div>
@@ -247,7 +265,7 @@
     <section class="card">
       <div class="section-title">
         <span>Per-Leg Output</span>
-        <button class="secondary no-print" onclick="exportPerLegReport()">Export / Print PDF</button>
+        <button class="secondary no-print" type="button" onclick="exportPerLegReport()">Export / Print PDF</button>
       </div>
       <div style="overflow-x:auto;">
         <table>
@@ -460,21 +478,15 @@ function addLeg(values = {}){
     <h3><span>Leg ${legCount}</span><span id="legStatusPill-${legCount}" class="pill">Not calculated</span></h3>
     <div class="import-actions">
       <button class="secondary" type="button" onclick="document.getElementById('foreflightFile-${legCount}').click()">Import ForeFlight Briefing</button>
-      <button class="secondary" type="button" onclick="document.getElementById('tripReportFile-${legCount}').click()">Import Trip Report</button>
       <input id="foreflightFile-${legCount}" type="file" accept="application/pdf,.pdf" style="display:none">
-      <input id="tripReportFile-${legCount}" type="file" accept="application/pdf,.pdf" style="display:none">
     </div>
     <div class="document-window">
       <div class="document-item">
         <strong>ForeFlight Briefing</strong>
         <span id="foreflightDocName-${legCount}" class="document-name">No file uploaded</span>
       </div>
-      <div class="document-item">
-        <strong>Trip Report</strong>
-        <span id="tripReportDocName-${legCount}" class="document-name">No file uploaded</span>
-      </div>
     </div>
-    <div id="importStatus-${legCount}" class="import-status">No documents imported for this leg.</div>
+    <div id="importStatus-${legCount}" class="import-status">No ForeFlight briefing imported for this leg.</div>
     <div class="inputs">
       <label>Route / note
         <input id="route-${legCount}" type="text" value="${values.route || "KAAA - KBBB"}" placeholder="KAAA - KBBB" autocomplete="off">
@@ -536,9 +548,7 @@ function addLeg(values = {}){
   document.getElementById("legs").appendChild(div);
 
   const foreflightNameEl = document.getElementById("foreflightDocName-" + legCount);
-  const tripReportNameEl = document.getElementById("tripReportDocName-" + legCount);
   if (foreflightNameEl && values.foreflightDocName) foreflightNameEl.textContent = values.foreflightDocName;
-  if (tripReportNameEl && values.tripReportDocName) tripReportNameEl.textContent = values.tripReportDocName;
   const id = legCount;
   const burnInput = document.getElementById("burn-" + id);
   const startInput = document.getElementById("start-" + id);
@@ -586,7 +596,6 @@ function addLeg(values = {}){
 
 
   const foreflightFileInput = document.getElementById("foreflightFile-" + id);
-  const tripReportFileInput = document.getElementById("tripReportFile-" + id);
 
   if (foreflightFileInput) {
     foreflightFileInput.addEventListener("change", async event => {
@@ -595,18 +604,6 @@ function addLeg(values = {}){
         const nameEl = document.getElementById("foreflightDocName-" + id);
         if (nameEl) nameEl.textContent = file.name;
         await importForeFlightBriefing(id, file);
-      }
-      event.target.value = "";
-    });
-  }
-
-  if (tripReportFileInput) {
-    tripReportFileInput.addEventListener("change", async event => {
-      const file = event.target.files && event.target.files[0];
-      if (file) {
-        const nameEl = document.getElementById("tripReportDocName-" + id);
-        if (nameEl) nameEl.textContent = file.name;
-        await importTripReport(id, file);
       }
       event.target.value = "";
     });
@@ -635,8 +632,7 @@ function getLegValues(id) {
     mtogw: n("mtogw-" + id),
     penalty: document.getElementById("penalty-" + id)?.value || "",
     notes: document.getElementById("notes-" + id)?.value || "",
-    foreflightDocName: document.getElementById("foreflightDocName-" + id)?.textContent || "No file uploaded",
-    tripReportDocName: document.getElementById("tripReportDocName-" + id)?.textContent || "No file uploaded"
+    foreflightDocName: document.getElementById("foreflightDocName-" + id)?.textContent || "No file uploaded"
   };
 }
 
@@ -1087,24 +1083,53 @@ async function importForeFlightBriefing(id,file){
     setImportStatus(id,`ForeFlight imported: ${imported.join(", ")||"no recognized fields"}. ${missing.length?"Not found: "+missing.join(", ")+". ":""}Verify all values before use.`,imported.length?"good":"warn");
   }catch(e){console.error(e);setImportStatus(id,"ForeFlight import failed: "+e.message,"bad");}
 }
-async function importTripReport(id,file){
-  setImportStatus(id,"Reading trip report…");
-  try{
-    const text=await extractPdfText(file), imported=[], missing=[];
-    const airports=parseAirportPair(text);
-    if(airports){setLegField(id,"route",`${airports.departure} - ${airports.destination}`);imported.push("route");}
-    const zfw=parseNumberAfterLabel(text,[/\bZFW\s*[:\-]?\s*([\d,]+)\s*lbs?\b/i,/\bZero Fuel Weight\s*[:\-]?\s*([\d,]+)\s*lbs?\b/i]);
-    if(zfw!==null){setLegField(id,"zfw",zfw);imported.push("ZFW");}else missing.push("ZFW");
-    const toMatches=[...text.matchAll(/\b(36,?100)\s*lb\s*\/\s*ST\b/gi)].map(m=>Number(m[1].replace(/,/g,"")));
-    const mtow=toMatches.length?Math.max(...toMatches):null;
-    if(mtow!==null){setLegField(id,"mtogw",mtow);imported.push("takeoff limit");}else missing.push("takeoff limit");
-    const ldMatches=[...text.matchAll(/\b(31,?800)\s*lb\s*\/\s*ST\b/gi)].map(m=>Number(m[1].replace(/,/g,"")));
-    const mlgw=ldMatches.length?31800:null;
-    if(mlgw!==null){setLegField(id,"mlgw",mlgw);imported.push("landing limit");}else missing.push("landing limit");
-    calculate();
-    setImportStatus(id,`Trip report imported: ${imported.join(", ")||"no recognized fields"}. ${missing.length?"Not found: "+missing.join(", ")+". ":""}Verify runway/configuration limits before use.`,imported.length?"good":"warn");
-  }catch(e){console.error(e);setImportStatus(id,"Trip report import failed: "+e.message,"bad");}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
+function reportTimestamp() {
+  return new Date().toLocaleString([], {year:"numeric",month:"short",day:"2-digit",hour:"2-digit",minute:"2-digit"});
+}
+function showPrintReport(html) {
+  const report=document.getElementById("printReport");
+  if(!report){alert("Print report container not found.");return;}
+  report.innerHTML=html;
+  report.style.display="block";
+  setTimeout(()=>window.print(),150);
+}
+function exportPerLegReport() {
+  calculate();
+  const recommendation=document.getElementById("recommendation")?.innerHTML||"";
+  const bestSavings=document.getElementById("bestSavings")?.innerHTML||"—";
+  const bestOption=document.getElementById("bestOption")?.innerHTML||"—";
+  const bestTankerIn=document.getElementById("bestTankerIn")?.innerHTML||"—";
+  const bestCarryCost=document.getElementById("bestCarryCost")?.innerHTML||"—";
+  const outputRows=document.getElementById("outputRows")?.innerHTML||"";
+  showPrintReport(`
+    <div class="card"><h2 style="margin:0 0 4px;">Tankering Calculator v 5.7.a — Per-Leg Report</h2><div class="note">Generated: ${escapeHtml(reportTimestamp())}</div><div class="recommendation" style="margin-top:10px;">${recommendation}</div></div>
+    <div class="card"><div class="section-title">Trip Summary</div><div class="kpi">
+      <div class="box"><div class="label">Projected best net savings</div><div class="value">${bestSavings}</div></div>
+      <div class="box"><div class="label">Recommended plan</div><div class="value plan-list">${bestOption}</div></div>
+      <div class="box"><div class="label">Total suggested tanker-in fuel</div><div class="value">${bestTankerIn}</div></div>
+      <div class="box"><div class="label">Estimated carry cost</div><div class="value">${bestCarryCost}</div></div></div></div>
+    <div class="card"><div class="section-title">Per-Leg Output</div><table><thead><tr><th>Leg</th><th>Status</th><th>Fuel spread</th><th>Max landing / cap</th><th>Tanker above min out / in</th><th>Suggested start / arrival</th><th>Projected net</th><th>Carry cost</th><th>Baseline arrival</th></tr></thead><tbody>${outputRows}</tbody></table></div>
+    <div class="card"><p class="note"><b>Planning aid only.</b> Verify aircraft limitations, landing weight, runway performance, fuel requirements, company SOPs, MEL/CDL, and release information before use.</p></div>`);
+}
+function exportTripInputReport() {
+  const ids=legIds();
+  const rows=ids.map((id,index)=>{const v=p=>document.getElementById(p+"-"+id)?.value??"";return `<tr><td>${index+1}</td><td>${escapeHtml(v("route"))}</td><td>${escapeHtml(v("ete"))}</td><td>${escapeHtml(v("burn"))}</td><td>${escapeHtml(v("start"))}</td><td>${escapeHtml(v("minReq"))}</td><td>${escapeHtml(v("nextStart"))}</td><td>${escapeHtml(v("priceHere"))}</td><td>${escapeHtml(v("priceNext"))}</td><td>${escapeHtml(v("fees"))}</td><td>${escapeHtml(v("minBuyGal"))}</td><td>${escapeHtml(v("zfw"))}</td><td>${escapeHtml(v("mlgw"))}</td><td>${escapeHtml(v("mtogw"))}</td><td>${escapeHtml(v("penalty"))}</td><td>${escapeHtml(v("notes"))}</td></tr>`;}).join("");
+  showPrintReport(`
+    <div class="card"><h2 style="margin:0 0 4px;">Tankering Calculator v 5.7.a — Saved Input Data</h2><div class="note">Generated: ${escapeHtml(reportTimestamp())}</div><p class="note">Use this report to quickly reconstruct a trip if the browser reloads or clears the calculator.</p></div>
+    <div class="card"><div class="section-title">Aircraft / Global Assumptions</div><table><tbody>
+      <tr><th>Aircraft</th><td>${escapeHtml(document.getElementById("aircraft")?.value||"")}</td></tr>
+      <tr><th>Fuel density</th><td>${escapeHtml(document.getElementById("density")?.value||"")} lb/gal</td></tr>
+      <tr><th>Maximum usable fuel</th><td>${escapeHtml(document.getElementById("maxFuel")?.value||"")} lb</td></tr>
+      <tr><th>Landing fuel cap</th><td>${escapeHtml(document.getElementById("landingCapPct")?.value||"")}%</td></tr>
+      <tr><th>Arrival buffer</th><td>${escapeHtml(document.getElementById("arrivalBuffer")?.value||"")} lb</td></tr>
+      <tr><th>Default carry penalty</th><td>${escapeHtml(document.getElementById("carryPenaltyPctHr")?.value||"")}%/hr</td></tr></tbody></table></div>
+    <div class="card"><div class="section-title">Leg Input Data</div><table><thead><tr><th>Leg</th><th>Route</th><th>ETE hr</th><th>Fuel to Dest lb</th><th>Start Fuel lb</th><th>Min Req lb</th><th>Next Leg Flight Fuel lb</th><th>Price Here</th><th>Price Next</th><th>Fees Waived</th><th>Min Buy gal</th><th>ZFW</th><th>MLGW</th><th>MTOGW</th><th>Penalty %/hr</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table></div>`);
+}
+window.addEventListener("afterprint",()=>{const report=document.getElementById("printReport");if(report){report.style.display="none";report.innerHTML="";}});
 
 function loadDemo(){
   document.getElementById("legs").innerHTML = "";
@@ -1165,45 +1190,6 @@ document.querySelectorAll(".tooltip").forEach(el => {
 
 loadDemo();
 </script>
-
-
-    <section id="printReport" style="display:none;">
-      <div class="card">
-        <h2 style="margin:0 0 4px;">Tankering Calculator v 5.7.a — Per-Leg Report</h2>
-        <p class="note" id="printGeneratedAt" style="margin-top:0;">Generated report</p>
-        <div class="recommendation" id="printRecommendation"></div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">Trip Summary</div>
-        <div class="kpi">
-          <div class="box"><div class="label">Projected best net savings</div><div id="printBestSavings" class="value">—</div></div>
-          <div class="box"><div class="label">Recommended plan</div><div id="printBestOption" class="value plan-list">—</div></div>
-          <div class="box"><div class="label">Total suggested tanker-in fuel</div><div id="printBestTankerIn" class="value">—</div></div>
-          <div class="box"><div class="label">Estimated carry cost</div><div id="printBestCarryCost" class="value">—</div></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="section-title">Per-Leg Output</div>
-        <div style="overflow-x:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Leg</th><th>Status</th><th>Fuel spread</th><th>Max landing / cap</th>
-                <th>Tanker above min out / in</th><th>Suggested start / arrival</th><th>Projected net</th><th>Carry cost</th><th>Baseline arrival</th>
-              </tr>
-            </thead>
-            <tbody id="printOutputRows"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="card">
-        <p class="note"><b>Reminder:</b> This report is a planning aid only. Verify aircraft limitations, landing weight, runway performance, company SOPs, release fuel, reserves, MEL/CDL, and dispatcher/company guidance before using any tankering plan.</p>
-      </div>
-    </section>
-
-
+<section id="printReport" style="display:none;"></section>
 </body>
 </html>
